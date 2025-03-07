@@ -5,9 +5,10 @@
   "main": "src/index.tsx",
   "scripts": {
     "start": "vite --port 3000",
-    "dev": "vite --port 3000",
+    "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview --port 3000"
+    "preview": "vite preview",
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@spotify/web-api-ts-sdk": "^1.2.0",

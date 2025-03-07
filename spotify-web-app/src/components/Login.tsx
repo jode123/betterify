@@ -12,13 +12,16 @@ interface ImportMeta {
 import React from 'react';
 
 const Login: React.FC = () => {
-  const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-  const redirectUri = encodeURIComponent(import.meta.env.VITE_SPOTIFY_REDIRECT_URI);
-  const scope = encodeURIComponent('playlist-read-private playlist-read-collaborative user-library-read');
-
   const handleLogin = () => {
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`;
-    window.location.href = authUrl;
+    const params = new URLSearchParams({
+      client_id: import.meta.env.VITE_SPOTIFY_CLIENT_ID,
+      response_type: 'code',
+      redirect_uri: import.meta.env.VITE_SPOTIFY_REDIRECT_URI,
+      scope: 'user-read-private user-read-email playlist-read-private playlist-read-collaborative',
+      show_dialog: 'true'
+    });
+
+    window.location.href = `https://accounts.spotify.com/authorize?${params}`;
   };
 
   return (
