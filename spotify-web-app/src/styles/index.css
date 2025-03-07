@@ -1,0 +1,128 @@
+/* index.css */
+
+/* Global styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+}
+
+/* Header styles */
+header {
+    background-color: #1db954;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Playlist card styles */
+.playlist-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 15px;
+    overflow: hidden;
+    transition: transform 0.2s;
+    padding: 1rem;
+    background: #f5f5f5;
+}
+
+.playlist-card:hover {
+    transform: scale(1.05);
+}
+
+.playlist-card img {
+    width: 100%;
+    height: auto;
+}
+
+.playlist-card .title {
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px;
+}
+
+/* Player styles */
+.player {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #282828;
+    color: white;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem;
+    background: #333;
+}
+
+/* Utility classes */
+.hidden {
+    display: none;
+}
+
+/* App styles */
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Header styles */
+.header {
+    padding: 1rem;
+    background: #000;
+    color: white;
+}
+
+.header nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.header a {
+    color: white;
+    text-decoration: none;
+}
+
+/* Playlist view styles */
+.playlist-view {
+    padding: 2rem;
+}
+
+/* Playlist grid styles */
+.playlist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: linear-gradient(to bottom right, #1DB954, #191414);
+  color: white;
+}
+
+.login-button {
+  margin-top: 20px;
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  background-color: #1DB954;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.login-button:hover {
+  transform: scale(1.05);
+}

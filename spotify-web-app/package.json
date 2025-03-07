@@ -1,0 +1,36 @@
+{
+  "name": "spotify-web-app",
+  "version": "1.0.0",
+  "description": "A web app that uses the Spotify API to pull and display playlists with a UI inspired by Apple Music.",
+  "main": "src/index.tsx",
+  "scripts": {
+    "start": "vite --port 3000",
+    "dev": "vite --port 3000",
+    "build": "tsc && vite build",
+    "preview": "vite preview --port 3000"
+  },
+  "dependencies": {
+    "@spotify/web-api-ts-sdk": "^1.2.0",
+    "axios": "^1.6.7",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.30.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.56",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.4"
+  },
+  "keywords": [
+    "spotify",
+    "web",
+    "app",
+    "music"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
