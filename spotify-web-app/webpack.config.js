@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: './src/index.tsx',
@@ -22,6 +23,13 @@ module.exports = {
       'react-native-vector-icons': 'react-native-vector-icons/dist',
     },
   },
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'index.html', to: 'index.html' }
+      ]
+    })
+  ],
   output: {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),

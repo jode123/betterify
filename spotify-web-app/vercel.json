@@ -7,36 +7,33 @@
       "config": {
         "distDir": "dist",
         "installCommand": "npm install",
-        "buildCommand": "npm run build"
+        "buildCommand": "npm run build",
+        "framework": "create-react-app"
       }
     }
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "headers": { "cache-control": "s-maxage=31536000,immutable" },
+      "src": "^/static/(.*)",
       "dest": "/static/$1"
     },
     {
-      "src": "/favicon.ico",
-      "dest": "/favicon.ico"
+      "src": "^/assets/(.*)",
+      "dest": "/assets/$1"
     },
     {
-      "src": "/asset-manifest.json",
-      "dest": "/asset-manifest.json"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/manifest.json"
-    },
-    {
-      "src": "/bundle.js",
-      "headers": { "cache-control": "public, max-age=0, must-revalidate" },
+      "src": "^/bundle.js",
       "dest": "/bundle.js"
     },
     {
-      "src": "/(.*)",
-      "headers": { "cache-control": "s-maxage=0" },
+      "src": "^/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": ".*",
       "dest": "/index.html"
     }
   ]
