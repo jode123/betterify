@@ -4,9 +4,9 @@
   "description": "A web app that uses the Spotify API to pull and display playlists with a UI inspired by Apple Music.",
   "main": "src/index.tsx",
   "scripts": {
-    "start": "vite --port 3000",
+    "start": "webpack serve --mode development",
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "webpack --mode production",
     "preview": "vite preview",
     "vercel-build": "vite build"
   },

@@ -1,41 +1,36 @@
 import React, { Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import PlaylistView from './components/PlaylistView';
-import AuthGuard from './components/AuthGuard';
-import Login from './components/Login';
-import Callback from './components/Callback';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'react-native';
 
-class Player extends React.Component {
-  render() {
-    return (
-      <div className="player">
-        {/* Player content */}
-      </div>
-    );
-  }
-}
+import Login from './src/screens/Login';
+import Callback from './src/screens/Callback';
+import TabNavigator from './src/navigation/TabNavigator';
+import AuthGuard from './src/components/AuthGuard';
 
-const App: React.FC = () => {
+const Stack = createNativeStackNavigator();
+
+const App = () => {
   return (
-    <div className="app">
-      <Header />
-      <main>
-        <Suspense fallback={<div>Loading...</div>}>
-          <Routes>
-            <Route path="/" element={
-              <AuthGuard>
-                <PlaylistView />
-              </AuthGuard>
-            } />
-            <Route path="/callback" element={<Callback />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="*" element={<div>404 - Not Found</div>} />
-          </Routes>
-        </Suspense>
-      </main>
-      <Player />
-    </div>
+    <SafeAreaProvider>
+      <StatusBar barStyle="light-content" />
+      <NavigationContainer>
+        <Stack.Navigator 
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: '#121212' }
+          }}
+        >
+          <Stack.Screen 
+            name="Main"
+            component={AuthGuard}
+          />
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Callback" component={Callback} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 };
 

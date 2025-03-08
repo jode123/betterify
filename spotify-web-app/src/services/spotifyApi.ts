@@ -1,18 +1,33 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://api.spotify.com/v1';
+const SPOTIFY_BASE_URL = 'https://api.spotify.com/v1';
 
-export const getPlaylists = async (accessToken: string) => {
-    const response = await axios.get(`${BASE_URL}/me/playlists`, {
+interface SpotifyResponse<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export const spotifyApi = {
+  getUserPlaylists: async (accessToken: string): Promise<SpotifyResponse<any>> => {
+    try {
+      const response = await axios.get(`${SPOTIFY_BASE_URL}/me/playlists`, {
         headers: {
-            Authorization: `Bearer ${accessToken}`,
-        },
-    });
-    return response.data.items;
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching playlists:', error);
+      throw error;
+    }
+  }
 };
 
 export const getPlaylistDetails = async (playlistId: string, accessToken: string) => {
-    const response = await axios.get(`${BASE_URL}/playlists/${playlistId}`, {
+    const response = await axios.get(`${SPOTIFY_BASE_URL}/playlists/${playlistId}`, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
@@ -21,7 +36,7 @@ export const getPlaylistDetails = async (playlistId: string, accessToken: string
 };
 
 export const searchTracks = async (query: string, accessToken: string) => {
-    const response = await axios.get(`${BASE_URL}/search`, {
+    const response = await axios.get(`${SPOTIFY_BASE_URL}/search`, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },

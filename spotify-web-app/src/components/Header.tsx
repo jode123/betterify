@@ -1,16 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <header className="header">
-      <Link to="/" className="logo">
-        Spotify Web App
-      </Link>
-      <nav>
-        <Link to="/playlists">Playlists</Link>
-        <Link to="/search">Search</Link>
-      </nav>
+      <div className="navigation-buttons">
+        <button className="nav-button" onClick={() => navigate(-1)}>←</button>
+        <button className="nav-button" onClick={() => navigate(1)}>→</button>
+      </div>
+      <div className="user-controls">
+        <button className="profile-button">Profile</button>
+      </div>
     </header>
   );
 };
