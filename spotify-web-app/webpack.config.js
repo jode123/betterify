@@ -1,37 +1,49 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: './src/index.tsx',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'bundle.js',
+    publicPath: '/'
+  },
   module: {
     rules: [
       {
         test: /\.(ts|tsx)$/,
         use: 'ts-loader',
-        exclude: /node_modules/,
+        exclude: /node_modules/
       },
       {
-        test: /\.(png|jpe?g|gif|svg)$/i,
-        type: 'asset/resource'
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
       },
-    ],
+      {
+        test: /\.(png|jpg|gif|svg)$/i,
+        use: ['file-loader']
+      }
+    ]
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js', '.jsx'],
+    extensions: ['.tsx', '.ts', '.js'],
     alias: {
-      'react-native$': 'react-native-web',
-      'react-native-vector-icons': 'react-native-vector-icons/dist',
-    },
+      'react-native$': 'react-native-web'
+    }
   },
   plugins: [
+    new HtmlWebpackPlugin({
+      template: './index.html'
+    }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'index.html', to: 'index.html' }
+        { from: 'public', to: '' }
       ]
     })
   ],
-  output: {
-    filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist'),
-  },
+  devServer: {
+    historyApiFallback: true,
+    hot: true
+  }
 };
