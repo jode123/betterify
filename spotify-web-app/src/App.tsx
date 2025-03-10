@@ -1,16 +1,18 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { SafeAreaView } from 'react-native-web';
+import { View } from 'react-native-web';
 
 import Login from './components/Login';
 import Callback from './components/Callback';
 import AuthGuard from './components/AuthGuard';
 import TabNavigator from './navigation/TabNavigator';
 
-const App: React.FC = () => {
+type AppProps = Record<string, never>;
+
+const App: React.ComponentType<AppProps> = () => {
   return (
     <Router>
-      <SafeAreaView 
+      <View 
         style={{ 
           flex: 1, 
           backgroundColor: '#121212',
@@ -23,7 +25,7 @@ const App: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/callback" element={<Callback />} />
         </Routes>
-      </SafeAreaView>
+      </View>
     </Router>
   );
 };
