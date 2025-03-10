@@ -12,7 +12,14 @@ module.exports = {
     rules: [
       {
         test: /\.(ts|tsx)$/,
-        use: 'ts-loader',
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true
+            }
+          }
+        ],
         exclude: /node_modules/
       },
       {
@@ -29,12 +36,19 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js', '.jsx'],
     alias: {
       'react-native$': 'react-native-web',
-      'react-native-vector-icons': 'react-native-vector-icons/dist'
+      'react-native-vector-icons': 'react-native-vector-icons/dist',
+      'react-native-safe-area-context': 'react-native-safe-area-context/lib/commonjs/index.js'
+    },
+    fallback: {
+      "crypto": false,
+      "stream": false,
+      "path": false,
+      "fs": false
     }
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './index.html'
+      template: './public/index.html'
     })
   ],
   devServer: {

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "webpack serve --mode development",
     "build": "webpack --mode production",
-    "vercel-build": "npm install && webpack --mode production"
+    "vercel-build": "webpack --mode production"
   },
   "dependencies": {
     "@spotify/web-api-ts-sdk": "^1.2.0",
