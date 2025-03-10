@@ -1,5 +1,12 @@
 import { NextAuthOptions } from "next-auth"
 import SpotifyProvider from "next-auth/providers/spotify"
+import { Session } from "next-auth"
+
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string
+  }
+}
 
 const scopes = [
   'user-read-email',
@@ -27,8 +34,8 @@ export const authOptions: NextAuthOptions = {
       }
       return token
     },
-    async session({ session, token }) {
-      session.accessToken = token.accessToken
+    async session({ session, token }: { session: Session, token: any }) {
+      session.accessToken = token.accessToken as string
       return session
     },
   },
