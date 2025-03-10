@@ -14,12 +14,14 @@ module.exports = {
         test: /\.(ts|tsx)$/,
         use: [
           {
-            loader: 'ts-loader',
+            loader: 'babel-loader',
             options: {
-              transpileOnly: false,
-              compilerOptions: {
-                module: 'esnext'
-              }
+              presets: [
+                ['@babel/preset-env', { targets: { node: 'current' } }],
+                '@babel/preset-react',
+                '@babel/preset-typescript'
+              ],
+              plugins: ['react-native-web']
             }
           }
         ],
@@ -39,24 +41,13 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js', '.jsx'],
     alias: {
       'react-native$': 'react-native-web',
-      '@expo/vector-icons': 'react-native-vector-icons',
-      'react-native-safe-area-context': 'react-native-safe-area-context/lib/commonjs/index.js'
-    },
-    fallback: {
-      "crypto": false,
-      "stream": false,
-      "path": false,
-      "fs": false
+      'react-native-vector-icons': 'react-native-vector-icons/dist',
+      '@expo/vector-icons': 'react-native-vector-icons'
     }
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: './public/index.html'
     })
-  ],
-  devServer: {
-    historyApiFallback: true,
-    hot: true,
-    port: 3000
-  }
+  ]
 };

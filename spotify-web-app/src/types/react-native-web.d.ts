@@ -8,4 +8,9 @@ declare module 'react-native-web' {
   export const TouchableOpacity: ComponentType<TouchableOpacityProps>;
   export const StyleSheet: any;
   export const Platform: any;
+  export const AppRegistry: any;
+}
+
+declare module '@expo/vector-icons' {
+  export * from '@expo/vector-icons/build/IconTypes';
 }
