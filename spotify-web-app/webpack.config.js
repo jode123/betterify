@@ -29,7 +29,8 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
     alias: {
-      'react-native$': 'react-native-web'
+      'react-native$': 'react-native-web',
+      'react-native-vector-icons': 'react-native-vector-icons/dist'
     }
   },
   plugins: [
