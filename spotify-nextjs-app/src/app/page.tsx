@@ -1,34 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { fetchPlaylists } from '../lib/spotify';
-import PlaylistCard from '../components/PlaylistCard';
-import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
+'use client'
 
-const Page = () => {
-  const [playlists, setPlaylists] = useState([]);
+import { useSession } from 'next-auth/react'
+import Sidebar from '../components/Sidebar'
+import Header from '../components/Header'
+import PlaylistGrid from '../components/PlaylistGrid'
+import { LoginButton } from '@/components/LoginButton'
 
-  useEffect(() => {
-    const getPlaylists = async () => {
-      const data = await fetchPlaylists();
-      setPlaylists(data);
-    };
+export default function Home() {
+  const { data: session } = useSession()
 
-    getPlaylists();
-  }, []);
+  if (!session) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#1a1a1a]">
+        <div className="text-center">
+          <h1 className="text-6xl font-bold text-white mb-8">Music</h1>
+          <LoginButton />
+        </div>
+      </main>
+    )
+  }
 
   return (
-    <div className="flex">
+    <div className="flex h-screen bg-[#1a1a1a]">
       <Sidebar />
-      <div className="flex-1">
+      <main className="flex-1 overflow-y-auto">
         <Header />
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-          {playlists.map((playlist) => (
-            <PlaylistCard key={playlist.id} playlist={playlist} />
-          ))}
-        </div>
-      </div>
+        <PlaylistGrid />
+      </main>
     </div>
-  );
-};
-
-export default Page;
+  )
+}

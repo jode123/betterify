@@ -1,18 +1,28 @@
-import React from 'react';
-import Header from '../components/Header';
-import Sidebar from '../components/Sidebar';
-import '../styles/index.css';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { AuthProvider } from '@/components/AuthProvider'
 
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    return (
-        <div className="layout">
-            <Header />
-            <div className="main-content">
-                <Sidebar />
-                <main>{children}</main>
-            </div>
-        </div>
-    );
-};
+const inter = Inter({ subsets: ['latin'] })
 
-export default Layout;
+export const metadata: Metadata = {
+  title: 'Spotify Web App',
+  description: 'Apple Music inspired Spotify web app',
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <html lang="en">
+      <head>
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+      </head>
+      <body className={inter.className}>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
+    </html>
+  )
+}

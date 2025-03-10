@@ -1,22 +1,35 @@
 import React from 'react';
+import Link from 'next/link'
 
 const Sidebar: React.FC = () => {
     return (
-        <div className="sidebar">
-            <h2>My Playlists</h2>
-            <nav>
-                <ul>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/playlists">Playlists</a></li>
-                    <li><a href="/favorites">Favorites</a></li>
-                    <li><a href="/settings">Settings</a></li>
-                </ul>
+        <aside className="w-64 bg-[#282828] text-white p-6">
+            <nav className="space-y-6">
+                <div>
+                    <h2 className="text-sm uppercase font-semibold text-gray-400 mb-4">Library</h2>
+                    <ul className="space-y-3">
+                        <li>
+                            <Link href="/" className="flex items-center text-gray-300 hover:text-white">
+                                <span className="material-icons mr-3">library_music</span>
+                                Playlists
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/artists" className="flex items-center text-gray-300 hover:text-white">
+                                <span className="material-icons mr-3">person</span>
+                                Artists
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/albums" className="flex items-center text-gray-300 hover:text-white">
+                                <span className="material-icons mr-3">album</span>
+                                Albums
+                            </Link>
+                        </li>
+                    </ul>
+                </div>
             </nav>
-            <div className="user-info">
-                <p>User Name</p>
-                <p>user@example.com</p>
-            </div>
-        </div>
+        </aside>
     );
 };
 
