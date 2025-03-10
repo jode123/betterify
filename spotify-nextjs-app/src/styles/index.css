@@ -1,0 +1,64 @@
+/* index.css */
+
+/* Global styles for the Spotify Next.js app inspired by Apple Music */
+body {
+    margin: 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-weight: normal;
+}
+
+a {
+    color: #1db954;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Playlist Card Styles */
+.playlist-card {
+    background-color: #282828;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 10px;
+    transition: transform 0.2s;
+}
+
+.playlist-card:hover {
+    transform: scale(1.05);
+}
+
+/* Header Styles */
+.header {
+    background-color: #1c1c1c;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    background-color: #181818;
+    padding: 20px;
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+}
+
+/* Player Styles */
+.player {
+    background-color: #1c1c1c;
+    padding: 20px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
