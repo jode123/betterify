@@ -1,6 +1,5 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   entry: './src/index.tsx',
@@ -22,12 +21,12 @@ module.exports = {
       },
       {
         test: /\.(png|jpg|gif|svg)$/i,
-        use: ['file-loader']
+        type: 'asset/resource'
       }
     ]
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.tsx', '.ts', '.js', '.jsx'],
     alias: {
       'react-native$': 'react-native-web',
       'react-native-vector-icons': 'react-native-vector-icons/dist'
@@ -36,15 +35,11 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './index.html'
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
-        { from: 'public', to: '' }
-      ]
     })
   ],
   devServer: {
     historyApiFallback: true,
-    hot: true
+    hot: true,
+    port: 3000
   }
 };

@@ -1,24 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { 
-  View, 
-  FlatList,
+  View as RNView, 
+  Text as RNText, 
+  Image as RNImage, 
+  TouchableOpacity as RNTouchableOpacity,
   StyleSheet,
-  Text,
-  Image,
-  TouchableOpacity,
-  Dimensions,
-  ActivityIndicator
-} from 'react-native';
+  ActivityIndicator as RNActivityIndicator
+} from 'react-native-web';
 import { useSpotifyAuth } from '../hooks/useSpotifyAuth';
 import { spotifyApi } from '../services/spotifyApi';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-// Fix MaterialIcons import
-import Icon from 'react-native-vector-icons/MaterialIcons';
-
-// First, install the required package:
-// npm install react-native-vector-icons @types/react-native-vector-icons
-// npx pod-install ios # if using iOS
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface Playlist {
   id: string;
@@ -61,47 +54,47 @@ const PlaylistView = () => {
       : defaultImage;
 
     return (
-      <TouchableOpacity 
+      <RNTouchableOpacity 
         style={styles.playlistCard}
         activeOpacity={0.7}
         onPress={() => navigation.navigate('PlaylistDetails', { playlistId: item.id })}
       >
-        <View style={styles.imageContainer}>
+        <RNView style={styles.imageContainer}>
           {imageSource.uri ? (
-            <Image 
+            <RNImage 
               source={imageSource}
               style={styles.playlistImage}
               resizeMode="cover"
             />
           ) : (
-            <Icon name="music-note" size={40} color="#666" />
+            <MaterialIcons name="music-note" size={40} color="#666" />
           )}
-        </View>
-        <Text style={styles.playlistName} numberOfLines={2}>
+        </RNView>
+        <RNText style={styles.playlistName} numberOfLines={2}>
           {item.name || 'Untitled Playlist'}
-        </Text>
-      </TouchableOpacity>
+        </RNText>
+      </RNTouchableOpacity>
     );
   };
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1DB954" />
-      </View>
+      <RNView style={styles.loadingContainer}>
+        <RNActivityIndicator size="large" color="#1DB954" />
+      </RNView>
     );
   }
 
   const EmptyListComponent = () => (
-    <View style={styles.emptyContainer}>
-      <Icon name="queue-music" size={48} color="#666" />
-      <Text style={styles.emptyText}>No playlists found</Text>
-    </View>
+    <RNView style={styles.emptyContainer}>
+      <MaterialIcons name="queue-music" size={48} color="#666" />
+      <RNText style={styles.emptyText}>No playlists found</RNText>
+    </RNView>
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your Playlists</Text>
+    <RNView style={styles.container}>
+      <RNText style={styles.title}>Your Playlists</RNText>
       <FlatList
         data={playlists}
         renderItem={renderPlaylistCard}
@@ -111,7 +104,7 @@ const PlaylistView = () => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={<EmptyListComponent />}
       />
-    </View>
+    </RNView>
   );
 };
 
