@@ -16,7 +16,10 @@ module.exports = {
           {
             loader: 'ts-loader',
             options: {
-              transpileOnly: true
+              transpileOnly: false,
+              compilerOptions: {
+                module: 'esnext'
+              }
             }
           }
         ],
@@ -36,7 +39,7 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js', '.jsx'],
     alias: {
       'react-native$': 'react-native-web',
-      'react-native-vector-icons': 'react-native-vector-icons/dist',
+      '@expo/vector-icons': 'react-native-vector-icons',
       'react-native-safe-area-context': 'react-native-safe-area-context/lib/commonjs/index.js'
     },
     fallback: {

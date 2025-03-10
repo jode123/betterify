@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  View as RNView, 
-  Text as RNText, 
-  Image as RNImage, 
-  TouchableOpacity as RNTouchableOpacity,
+import {
+  View,
+  Text, 
+  Image, 
+  TouchableOpacity,
   StyleSheet,
   Platform 
 } from 'react-native-web';
@@ -21,15 +21,15 @@ const Player = () => {
   const [volume, setVolume] = useState(1);
 
   const renderControls = () => (
-    <RNView style={styles.controls}>
-      <RNTouchableOpacity 
+    <View style={styles.controls}>
+      <TouchableOpacity 
         style={styles.iconButton}
         onPress={() => {/* Handle previous */}}
       >
         <MaterialIcons name="skip-previous" size={24} color="#FFFFFF" />
-      </RNTouchableOpacity>
+      </TouchableOpacity>
       
-      <RNTouchableOpacity 
+      <TouchableOpacity 
         style={[styles.iconButton, styles.playPauseButton]}
         onPress={() => setIsPlaying(!isPlaying)}
       >
@@ -38,31 +38,31 @@ const Player = () => {
           size={32} 
           color="#FFFFFF" 
         />
-      </RNTouchableOpacity>
+      </TouchableOpacity>
       
-      <RNTouchableOpacity 
+      <TouchableOpacity 
         style={styles.iconButton}
         onPress={() => {/* Handle next */}}
       >
         <MaterialIcons name="skip-next" size={24} color="#FFFFFF" />
-      </RNTouchableOpacity>
-    </RNView>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
-    <RNView style={styles.container}>
+    <View style={styles.container}>
       {currentTrack && (
         <>
-          <RNView style={styles.trackInfo}>
-            <RNImage 
+          <View style={styles.trackInfo}>
+            <Image 
               source={{ uri: currentTrack.thumbnail }}
               style={styles.artwork}
             />
-            <RNView style={styles.textContainer}>
-              <RNText style={styles.title}>{currentTrack.title}</RNText>
-              <RNText style={styles.artist}>{currentTrack.artist}</RNText>
-            </RNView>
-          </RNView>
+            <View style={styles.textContainer}>
+              <Text style={styles.title}>{currentTrack.title}</Text>
+              <Text style={styles.artist}>{currentTrack.artist}</Text>
+            </View>
+          </View>
 
           {renderControls()}
 
@@ -77,7 +77,7 @@ const Player = () => {
           />
         </>
       )}
-    </RNView>
+    </View>
   );
 };
 
