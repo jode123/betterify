@@ -1,13 +1,34 @@
 'use client'
 
-import { getLoginUrl } from '@/lib/spotify'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 
 export default function LoginButton() {
   const handleLogin = () => {
-    window.location.href = getLoginUrl()
-  }
+    const CLIENT_ID = "f386c406d93949f5b0e886d55e70804e";
+    const CLIENT_SECRET = "0b15b2f8af744fdc89a354f2d4c333c3";
+    const REDIRECT_URI = "https://betterify.vercel.app/callback";
+    
+    const scope = [
+      'user-read-private',
+      'user-read-email',
+      'playlist-read-private',
+      'playlist-read-collaborative',
+      'streaming',
+      'user-library-read',
+    ].join(' ');
+
+    const params = new URLSearchParams({
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      redirect_uri: REDIRECT_URI,
+      scope: scope,
+      response_type: 'token',
+      show_dialog: 'true'
+    });
+
+    window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
+  };
 
   return (
     <div className="center-container">
@@ -62,10 +83,7 @@ export default function LoginButton() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
             onClick={handleLogin}
-            className="w-40 apple-button bg-[var(--system-pink)] hover:bg-[var(--system-red)] 
-              py-2 text-sm text-[var(--text-primary)]
-              transition-all duration-200 rounded-md
-              shadow-lg hover:shadow-xl"
+            className="bg-green-500 text-white px-8 py-3 rounded-full font-bold hover:bg-green-600 transition-colors"
           >
             Connect with Spotify
           </motion.button>

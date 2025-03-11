@@ -2,23 +2,42 @@ export const SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize';
 export const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
 export const REDIRECT_URI = process.env.NEXT_PUBLIC_SPOTIFY_REDIRECT_URI;
 
-const SCOPES = [
-  'user-read-private',
-  'user-read-email',
-  'playlist-read-private',
-  'playlist-read-collaborative'
-].join(' ');
-
-export const getLoginUrl = () => {
-  const params = new URLSearchParams({
-    client_id: CLIENT_ID!,
-    redirect_uri: REDIRECT_URI!,
-    scope: SCOPES,
-    response_type: 'token',
-    show_dialog: 'true'
+export const getSpotifyAuthUrl = () => {
+  // Debug logs
+  console.log('Generating Spotify Auth URL...');
+  console.log('Environment variables:', {
+    CLIENT_ID,
+    REDIRECT_URI,
   });
 
-  return `${SPOTIFY_AUTH_URL}?${params.toString()}`;
+  if (!CLIENT_ID || !REDIRECT_URI) {
+    console.error('Missing environment variables');
+    return '/';
+  }
+
+  try {
+    const params = new URLSearchParams({
+      client_id: CLIENT_ID,
+      response_type: 'token',
+      redirect_uri: REDIRECT_URI,
+      scope: [
+        'user-read-private',
+        'user-read-email',
+        'playlist-read-private',
+        'playlist-read-collaborative',
+        'streaming',
+        'user-library-read',
+      ].join(' '),
+      show_dialog: 'true'
+    });
+
+    const authUrl = `${SPOTIFY_AUTH_URL}?${params.toString()}`;
+    console.log('Generated URL:', authUrl);
+    return authUrl;
+  } catch (error) {
+    console.error('Error generating auth URL:', error);
+    return '/';
+  }
 };
 
 export const getTokenFromUrl = (): string | null => {
@@ -31,7 +50,7 @@ export const getTokenFromUrl = (): string | null => {
   const token = params.get('access_token');
   
   if (token) {
-    localStorage.setItem('spotify_token', token);
+    localStorage.setItem('spotify_access_token', token);
     return token;
   }
   
@@ -40,5 +59,5 @@ export const getTokenFromUrl = (): string | null => {
 
 export const getStoredToken = (): string | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('spotify_token');
+  return localStorage.getItem('spotify_access_token');
 };

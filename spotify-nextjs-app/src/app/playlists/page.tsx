@@ -86,43 +86,46 @@ export default function PlaylistsPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-white text-3xl font-bold mb-8">Library</h1>
-        
-        <ul className="space-y-3 w-full">
+    <div className="h-screen overflow-hidden bg-black">
+      {/* Fixed Header */}
+      <div className="w-full bg-black/95 backdrop-blur-sm sticky top-0 z-10 p-4 border-b border-zinc-800">
+        <h1 className="text-white text-2xl font-bold">Your Library</h1>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="h-[calc(100vh-64px)] overflow-y-auto">
+        <ul className="flex flex-col gap-2 p-4">
           {playlists.map((playlist) => (
             <li 
               key={playlist.id}
-              className="flex items-center w-full bg-zinc-800/30 rounded-lg p-3 hover:bg-zinc-800/60 transition-all duration-300 cursor-pointer"
+              className="flex items-start w-full bg-zinc-800/30 hover:bg-zinc-800/60 transition-all duration-300 cursor-pointer rounded-md p-2"
             >
-              <div className="flex items-center space-x-4 w-full">
-                <div className="w-20 h-20 relative flex-shrink-0">
-                  {playlist.images?.[0]?.url ? (
-                    <Image
-                      src={playlist.images[0].url}
-                      alt={playlist.name}
-                      width={80}
-                      height={80}
-                      className="rounded-2xl object-cover"
-                      priority
-                    />
-                  ) : (
-                    <div className="w-20 h-20 bg-zinc-700 rounded-2xl flex items-center justify-center">
-                      <span className="text-white/60 text-sm">No Cover</span>
-                    </div>
-                  )}
-                </div>
+              {/* Image - Left aligned */}
+              <div className="w-12 h-12 relative flex-shrink-0 mr-3">
+                {playlist.images?.[0]?.url ? (
+                  <Image
+                    src={playlist.images[0].url}
+                    alt={playlist.name}
+                    width={48}
+                    height={48}
+                    className="rounded-md object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-zinc-700 rounded-md flex items-center justify-center">
+                    <span className="text-white/60 text-xs">No Cover</span>
+                  </div>
+                )}
+              </div>
 
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-white font-medium text-lg truncate">
-                    {playlist.name}
-                  </h2>
-                  <p className="text-white/60 text-sm flex items-center mt-1">
-                    <span>{playlist.tracks.total} tracks</span>
-                    <span className="mx-2">•</span>
-                    <span className="truncate">{playlist.owner.display_name}</span>
-                  </p>
+              {/* Text Content - Left aligned */}
+              <div className="flex flex-col justify-center min-w-0">
+                <h2 className="text-white text-sm font-medium truncate">
+                  {playlist.name}
+                </h2>
+                <div className="flex items-center text-zinc-400 text-xs mt-0.5">
+                  <span className="truncate">Playlist</span>
+                  <span className="mx-1">•</span>
+                  <span>{playlist.tracks.total} tracks</span>
                 </div>
               </div>
             </li>
