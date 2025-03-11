@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 
 interface Track {
   id: string
   name: string
   album: {
     images: { url: string }[]
+    name: string
   }
   artists: { name: string }[]
   duration_ms: number
@@ -18,6 +20,7 @@ export default function PlaylistDetails() {
   const params = useParams()
   const [tracks, setTracks] = useState<Track[]>([])
   const [playlistName, setPlaylistName] = useState('')
+  const [playlistImage, setPlaylistImage] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -48,6 +51,7 @@ export default function PlaylistDetails() {
         )
         const playlistData = await playlistResponse.json()
         setPlaylistName(playlistData.name)
+        setPlaylistImage(playlistData.images[0]?.url || '')
       } catch (error) {
         console.error('Error fetching playlist tracks:', error)
       } finally {
@@ -66,52 +70,92 @@ export default function PlaylistDetails() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#1a1a1a]">
+      <div className="flex min-h-screen items-center justify-center bg-[#000000]">
         <div className="text-white text-2xl">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] text-white p-8">
-      <div className="max-w-7xl mx-auto">
-        <Link 
-          href="/" 
-          className="inline-flex items-center text-gray-400 hover:text-white mb-8"
+    <div className="min-h-screen bg-black">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative"
+      >
+        {/* Hero Section */}
+        <div 
+          className="h-[50vh] relative bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${playlistImage})`,
+          }}
         >
-          <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Playlists
-        </Link>
-
-        <h1 className="text-4xl font-bold mb-8">{playlistName}</h1>
-
-        <div className="bg-[#282828] rounded-lg shadow-xl">
-          {tracks.map((track, index) => (
-            <div 
-              key={track.id}
-              className="flex items-center p-4 hover:bg-[#383838] transition-colors border-b border-[#383838] last:border-0"
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black" />
+          <div className="absolute bottom-0 p-8 w-full">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
             >
-              <div className="w-12 text-gray-400 font-mono">{index + 1}</div>
-              <img 
-                src={track.album.images[2]?.url || '/default-album.png'} 
-                alt={track.name}
-                className="w-12 h-12 object-cover rounded"
-              />
-              <div className="ml-4 flex-1">
-                <div className="font-medium">{track.name}</div>
-                <div className="text-sm text-gray-400">
-                  {track.artists.map(artist => artist.name).join(', ')}
-                </div>
-              </div>
-              <div className="text-gray-400 text-sm">
-                {formatDuration(track.duration_ms)}
-              </div>
-            </div>
-          ))}
+              <h1 className="text-6xl font-bold text-white mb-4">{playlistName}</h1>
+              <p className="text-gray-300">{tracks.length} songs</p>
+            </motion.div>
+          </div>
         </div>
-      </div>
+
+        {/* Track List */}
+        <div className="px-8 py-4">
+          <div className="flex items-center text-gray-400 text-sm px-4 py-2 border-b border-gray-800">
+            <div className="w-12">#</div>
+            <div className="w-12"></div>
+            <div className="flex-1">TITLE</div>
+            <div className="w-48">ALBUM</div>
+            <div className="w-24 text-right">TIME</div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            {tracks.map((track, index) => (
+              <motion.div
+                key={track.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * index }}
+                className="flex items-center p-4 hover:bg-white/5 rounded-lg group transition-colors"
+              >
+                <div className="w-12 text-gray-400">{index + 1}</div>
+                <div className="w-12">
+                  <img 
+                    src={track.album.images[2]?.url || '/default-album.png'}
+                    alt={track.name}
+                    className="w-10 h-10 rounded shadow-lg"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-medium truncate">{track.name}</div>
+                  <div className="text-gray-400 text-sm truncate">
+                    {track.artists.map(artist => artist.name).join(', ')}
+                  </div>
+                </div>
+                <div className="w-48 text-gray-400 text-sm truncate">
+                  {track.album.name}
+                </div>
+                <div className="w-24 text-gray-400 text-sm text-right">
+                  {formatDuration(track.duration_ms)}
+                </div>
+                <button className="opacity-0 group-hover:opacity-100 ml-4 p-2 rounded-full bg-[#1db954] text-black">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </button>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.div>
     </div>
   )
 }
