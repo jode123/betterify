@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 interface Playlist {
   id: string
@@ -13,6 +14,11 @@ interface Playlist {
 export default function PlaylistGrid() {
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const { data: session } = useSession()
+  const router = useRouter()
+
+  const handlePlaylistClick = (playlistId: string) => {
+    router.push(`/playlist/${playlistId}`)
+  }
 
   return (
     <div className="p-6">
@@ -21,7 +27,8 @@ export default function PlaylistGrid() {
         {playlists.map((playlist) => (
           <div 
             key={playlist.id}
-            className="group relative bg-[#282828] rounded-lg p-4 hover:bg-[#383838] transition-colors duration-200"
+            onClick={() => handlePlaylistClick(playlist.id)}
+            className="group relative bg-[#282828] rounded-lg p-4 hover:bg-[#383838] transition-colors duration-200 cursor-pointer"
           >
             <div className="aspect-square mb-4">
               <img 

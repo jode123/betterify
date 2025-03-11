@@ -2,27 +2,27 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getTokenFromUrl } from '@/lib/spotify';
 
 export default function Callback() {
   const router = useRouter();
 
   useEffect(() => {
-    // Get the hash from the URL
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get('access_token');
-    
-    if (accessToken) {
-      localStorage.setItem('spotify_access_token', accessToken);
-      router.replace('/playlists');
+    const token = getTokenFromUrl();
+    if (token) {
+      // Clear the hash from URL
+      window.location.hash = '';
+      // Redirect to home page
+      router.push('/');
     } else {
-      router.replace('/');
+      // If no token, redirect to login
+      router.push('/');
     }
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black">
-      <div className="text-white">Authenticating...</div>
+    <div className="flex min-h-screen items-center justify-center bg-[#1a1a1a]">
+      <div className="text-white text-2xl">Loading...</div>
     </div>
   );
 }

@@ -1,15 +1,33 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
-import Sidebar from '../components/Sidebar'
-import Header from '../components/Header'
-import PlaylistGrid from '../components/PlaylistGrid'
+import { useEffect, useState } from 'react'
+import { getStoredToken } from '@/lib/spotify'
 import LoginButton from '@/components/LoginButton'
+import Sidebar from '@/components/Sidebar'
+import Header from '@/components/Header'
+import PlaylistGrid from '@/components/PlaylistGrid'
 
 export default function Home() {
-  const { data: session } = useSession()
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  if (!session) {
+  useEffect(() => {
+    const token = getStoredToken()
+    if (token) {
+      setIsAuthenticated(true)
+    }
+    setIsLoading(false)
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#1a1a1a]">
+        <div className="text-white text-2xl">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
     return (
       <main className="flex min-h-screen bg-gradient-to-b from-[#1a1a1a] to-[#121212]">
         <div className="m-auto flex flex-col items-center justify-center gap-8 p-8">

@@ -7,9 +7,18 @@ import Image from 'next/image';
 interface Playlist {
   id: string;
   name: string;
-  images: { url: string }[];
-  tracks: { total: number };
-  description?: string;
+  images: Array<{
+    url: string;
+    height: number;
+    width: number;
+  }>;
+  tracks: {
+    total: number;
+    href: string;
+  };
+  owner: {
+    display_name: string;
+  };
 }
 
 export default function PlaylistsPage() {
@@ -18,7 +27,7 @@ export default function PlaylistsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchPlaylists = async () => {
+    const validateAndFetchPlaylists = async () => {
       const token = localStorage.getItem('spotify_access_token');
       
       if (!token) {
@@ -27,24 +36,45 @@ export default function PlaylistsPage() {
       }
 
       try {
-        const response = await fetch('https://api.spotify.com/v1/me/playlists', {
+        // First validate the token
+        const userResponse = await fetch('https://api.spotify.com/v1/me', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
-        if (!response.ok) throw new Error('Failed to fetch playlists');
-        const data = await response.json();
-        setPlaylists(data.items);
+        if (!userResponse.ok) {
+          // Token is invalid
+          localStorage.removeItem('spotify_access_token');
+          router.replace('/');
+          return;
+        }
+
+        // Token is valid, fetch playlists
+        const playlistResponse = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!playlistResponse.ok) throw new Error('Failed to fetch playlists');
+        const data = await playlistResponse.json();
+        
+        const sortedPlaylists = data.items.sort((a: Playlist, b: Playlist) => 
+          a.name.localeCompare(b.name)
+        );
+
+        setPlaylists(sortedPlaylists);
       } catch (error) {
-        console.error('Error fetching playlists:', error);
+        console.error('Error:', error);
+        localStorage.removeItem('spotify_access_token');
         router.replace('/');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPlaylists();
+    validateAndFetchPlaylists();
   }, [router]);
 
   if (loading) {
@@ -56,48 +86,49 @@ export default function PlaylistsPage() {
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-white text-3xl font-bold">Library</h1>
-          <button className="text-white/80 hover:text-white transition-colors">
-            Sort By
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-white text-3xl font-bold mb-8">Library</h1>
+        
+        <ul className="space-y-3 w-full">
           {playlists.map((playlist) => (
-            <div 
+            <li 
               key={playlist.id}
-              className="group relative bg-zinc-800/30 rounded-xl p-4 hover:bg-zinc-800/60 transition-all duration-300 cursor-pointer"
+              className="flex items-center w-full bg-zinc-800/30 rounded-lg p-3 hover:bg-zinc-800/60 transition-all duration-300 cursor-pointer"
             >
-              <div className="relative w-full aspect-square mb-4 rounded-lg overflow-hidden">
-                {playlist.images[0]?.url ? (
-                  <Image
-                    src={playlist.images[0].url}
-                    alt={playlist.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                    <span className="text-white/60">No Cover</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
-                <button className="absolute right-2 bottom-2 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-black" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                  </svg>
-                </button>
+              <div className="flex items-center space-x-4 w-full">
+                <div className="w-20 h-20 relative flex-shrink-0">
+                  {playlist.images?.[0]?.url ? (
+                    <Image
+                      src={playlist.images[0].url}
+                      alt={playlist.name}
+                      width={80}
+                      height={80}
+                      className="rounded-2xl object-cover"
+                      priority
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-zinc-700 rounded-2xl flex items-center justify-center">
+                      <span className="text-white/60 text-sm">No Cover</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-white font-medium text-lg truncate">
+                    {playlist.name}
+                  </h2>
+                  <p className="text-white/60 text-sm flex items-center mt-1">
+                    <span>{playlist.tracks.total} tracks</span>
+                    <span className="mx-2">•</span>
+                    <span className="truncate">{playlist.owner.display_name}</span>
+                  </p>
+                </div>
               </div>
-              <h2 className="text-white font-medium text-sm mb-1 truncate">{playlist.name}</h2>
-              <p className="text-white/60 text-xs">{playlist.tracks.total} songs</p>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
-    </main>
+    </div>
   );
 }
