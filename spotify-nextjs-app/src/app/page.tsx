@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import PlaylistGrid from '../components/PlaylistGrid'
-import { LoginButton } from '@/components/LoginButton'
+import LoginButton from '@/components/LoginButton'
 
 export default function Home() {
   const { data: session } = useSession()

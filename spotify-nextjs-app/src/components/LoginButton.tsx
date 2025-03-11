@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // Updated to next/navigation for app router
-import { getSpotifyAuthUrl } from '../utils/spotifyAuth'; // Fixed import path
+import { useRouter } from 'next/navigation';
+import { getSpotifyAuthUrl } from '../utils/spotifyAuth';
 
-const LoginButton = () => { // Changed name to match file name
+const LoginButton = () => {
   const router = useRouter();
 
   useEffect(() => {
