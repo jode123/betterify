@@ -24,6 +24,7 @@ interface LastFmAlbum {
     name: string
   }
   image: LastFmImage[]
+  playcount?: string
 }
 
 interface Artist {
