@@ -20,7 +20,7 @@ export function PlaylistCard({ item }: PlaylistCardProps) {
   const handleClick = () => {
     if (item.type === 'album') {
       router.push(`/album/${encodeURIComponent(item.name)}`)
-    } else if (item.type === 'featured') {
+    } else if (item.type === 'featured' && item.artist) {
       // Include artist name in the URL for featured albums
       router.push(`/album/${encodeURIComponent(item.artist)}/${encodeURIComponent(item.name)}`)
     }
