@@ -87,7 +87,7 @@ export default function PlaylistsPage() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-black">
+    <div className="min-h-screen bg-black">
       {/* Fixed Header with Menu */}
       <div className="w-full bg-black/95 backdrop-blur-sm sticky top-0 z-10 p-4 border-b border-zinc-800 flex justify-between items-center">
         <h1 className="text-white text-2xl font-bold">Your Library</h1>
@@ -97,7 +97,7 @@ export default function PlaylistsPage() {
             className="text-white p-2 hover:bg-zinc-800/60 rounded-full"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
             </svg>
           </button>
           
@@ -128,8 +128,8 @@ export default function PlaylistsPage() {
         </div>
       </div>
 
-      {/* Existing scrollable content */}
-      <div className="h-[calc(100vh-64px)] overflow-y-auto">
+      {/* Scrollable Content with top margin */}
+      <div className="overflow-y-auto mt-16">
         <ul className="flex flex-col gap-2 p-4">
           {playlists.map((playlist) => (
             <li 

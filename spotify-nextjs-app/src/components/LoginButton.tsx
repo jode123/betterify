@@ -1,13 +1,15 @@
 'use client'
-
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
-export default function LoginButton() {
+export default function LoginPage() {
+  const router = useRouter()
+
   const handleLogin = () => {
     const CLIENT_ID = "f386c406d93949f5b0e886d55e70804e";
     const CLIENT_SECRET = "0b15b2f8af744fdc89a354f2d4c333c3";
-    const REDIRECT_URI = "https://betterify.vercel.app/callback";
+    const REDIRECT_URI = "https://betterify.vercel.app/callback"; // Changed back to /callback
     
     const scope = [
       'user-read-private',
@@ -30,8 +32,13 @@ export default function LoginButton() {
     window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
   };
 
+  const handleSkipAuth = () => {
+    localStorage.setItem('skip_auth', 'true')
+    router.push('/discover')
+  }
+
   return (
-    <div className="center-container">
+    <div className="page-fixed center-container login-page">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -83,10 +90,22 @@ export default function LoginButton() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
             onClick={handleLogin}
-            className="bg-green-500 text-white px-8 py-3 rounded-full font-bold hover:bg-green-600 transition-colors"
+            className="apple-button w-40 bg-[var(--system-pink)] hover:bg-[var(--system-red)] 
+              py-2 text-sm text-[var(--text-primary)]
+              transition-all duration-200 rounded-md
+              shadow-lg hover:shadow-xl"
           >
             Connect with Spotify
           </motion.button>
+
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={handleSkipAuth}
+              className="px-6 py-3 bg-[var(--background-secondary)] text-[var(--text-primary)] rounded-full hover:bg-[var(--background-tertiary)] transition-colors"
+            >
+              Skip Login (Dev Mode)
+            </button>
+          )}
         </motion.div>
       </motion.div>
     </div>

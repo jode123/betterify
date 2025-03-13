@@ -10,14 +10,19 @@
   "dependencies": {
     "@tailwindcss/line-clamp": "^0.4.4",
     "axios": "^1.6.7",
-    "framer-motion": "^12.4.12",
+    "crypto": "^1.0.1",
+    "framer-motion": "^12.5.0",
+    "intersection-observer": "^0.12.2",
     "lastfm-node-client": "^2.2.0",
     "next": "^14.1.0",
     "next-auth": "^4.24.5",
     "next-images": "^1.8.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "spotify-web-api-node": "^5.0.2"
+    "react-transition-group": "^4.4.5",
+    "spotify-web-api-node": "^5.0.2",
+    "tailwind": "^4.0.0",
+    "vercel": "^41.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",

@@ -1,28 +1,70 @@
-import React from 'react';
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { ImageWithFallback } from './ImageWithFallback'
+import { motion } from 'framer-motion'
 
 interface PlaylistCardProps {
-  playlist: {
-    id: string
+  item: {
     name: string
-    images: { url: string }[]
-    tracks: { total: number }
+    image: string
+    playcount?: number | string
+    type: 'album' | 'playlist' | 'featured'
+    artist?: string
   }
 }
 
-export default function PlaylistCard({ playlist }: PlaylistCardProps) {
+export function PlaylistCard({ item }: PlaylistCardProps) {
+  const router = useRouter()
+
+  const handleClick = () => {
+    if (item.type === 'album') {
+      router.push(`/album/${encodeURIComponent(item.name)}`)
+    } else if (item.type === 'featured') {
+      // Include artist name in the URL for featured albums
+      router.push(`/album/${encodeURIComponent(item.artist)}/${encodeURIComponent(item.name)}`)
+    }
+  }
+
   return (
-    <div className="bg-zinc-900 rounded-lg overflow-hidden hover:bg-zinc-800 transition-colors cursor-pointer">
-      <div className="aspect-square">
-        <img 
-          src={playlist.images[0]?.url || '/default-playlist.png'} 
-          alt={playlist.name}
-          className="w-full h-full object-cover"
-        />
+    <motion.div
+      className="card-container cursor-pointer"
+      onClick={handleClick}
+      whileHover={{ scale: 1.05 }}
+      transition={{ duration: 0.2 }}
+    >
+      <ImageWithFallback
+        src={item.image}
+        alt={item.name}
+        className="musish-card-image"
+      />
+      <div className="musish-card-content">
+        <h3 className="musish-card-title">{item.name}</h3>
+        {item.artist && (
+          <p className="musish-card-subtitle text-[var(--text-secondary)]">
+            {item.artist}
+          </p>
+        )}
+        {item.playcount && (
+          <p className="musish-card-subtitle">
+            {parseInt(item.playcount.toString()).toLocaleString()} plays
+          </p>
+        )}
       </div>
-      <div className="p-4">
-        <h3 className="text-white font-semibold truncate">{playlist.name}</h3>
-        <p className="text-gray-400 text-sm">{playlist.tracks.total} songs</p>
-      </div>
+    </motion.div>
+  )
+}
+
+export function AlbumCard({ album }: { album: any }) {
+  const router = useRouter()
+
+  const handleClick = () => {
+    router.push(`/album/${encodeURIComponent(album.name)}`)
+  }
+
+  return (
+    <div className="card-container" onClick={handleClick}>
+      {/* ...existing card content... */}
     </div>
   )
 }

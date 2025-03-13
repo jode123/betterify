@@ -8,7 +8,23 @@ const nextConfig = {
     SPOTIFY_REDIRECT_URI: process.env.SPOTIFY_REDIRECT_URI,
   },
   images: {
-    domains: ['i.scdn.co', 'mosaic.scdn.co', 'image-cdn-fa.spotify.com']
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'i.scdn.co',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lastfm.freetls.fastly.net',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.last.fm',
+        pathname: '**',
+      }
+    ],
   }
 }
 

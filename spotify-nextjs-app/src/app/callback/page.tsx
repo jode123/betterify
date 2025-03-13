@@ -14,14 +14,14 @@ export default function Callback() {
     
     if (accessToken) {
       localStorage.setItem('spotify_access_token', accessToken);
-      router.replace('/playlists');
+      router.replace('/discover');
     } else {
       router.replace('/');
     }
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black">
+    <div className="page-fixed bg-black">
       <div className="text-white">Authenticating...</div>
     </div>
   );
