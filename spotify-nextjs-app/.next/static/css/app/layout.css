@@ -100,259 +100,9 @@ html, body {
   overflow-y: auto;
 }
 
-/* Layout */
-.musish-container {
-  position: relative;
-  min-height: 100vh;
-  width: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: var(--background-primary);
-}
-
-/* Artist Page Specific */
-.artist-page-container {
-  position: relative;
-  min-height: 100vh;
-  background: var(--background-primary);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.artist-header {
-  position: relative;
-  padding: 32px;
-  margin-top: 64px; /* Add space at top */
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  z-index: 100;
-}
-
-.artist-name {
-  font-size: 6rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  text-align: left; /* Add explicit left alignment */
-}
-
-.artist-stats {
-  font-size: 1.125rem;
-  color: var(--text-secondary);
-  margin-top: 16px;
-  text-align: left; /* Add explicit left alignment */
-}
-
-.artist-content {
-  position: relative;
-  padding: 32px;
-  background: var(--background-primary);
-  z-index: 100;
-}
-
-/* Album Page Styles */
-.album-page-container {
-  position: relative;
-  min-height: 100vh;
-  background: var(--background-primary);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.album-header {
-  padding: 32px;
-  margin-top: 64px;
-  background: var(--background-primary);
-  z-index: 50;
-}
-
-.album-content {
-  position: relative;
-  padding: 32px;
-  background: var(--background-primary);
-  z-index: 50;
-}
-
-/* Card Components */
-.card-container {
-  position: relative;
-  flex: 0 0 180px;
-  width: 180px;
-  min-width: 180px; /* Ensure minimum width */
-  max-width: 180px; /* Ensure maximum width */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
-  cursor: pointer;
-}
-
-.card-container:hover {
-  transform: scale(1.05);
-  z-index: 2;
-}
-
-.musish-card-image {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.card-container:hover .musish-card-image {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.musish-card-content {
-  width: 100%;
-  margin-top: 12px;
-  text-align: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.musish-card-title {
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.musish-card-subtitle {
-  color: var(--text-secondary);
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Scroll Container */
-.scroll-container {
-  position: relative;
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  padding: 4px 0 20px 0;
-}
-
-.scroll-container::-webkit-scrollbar {
-  display: none;
-}
-
-.horizontal-grid {
-  display: flex;
-  gap: 24px;
-  padding: 0 4px;
-  width: max-content; /* This ensures the grid expands to fit all items */
-}
-
-/* Scroll Buttons */
-.scroll-button {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  background: var(--background-secondary);
-  color: var(--text-primary);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-}
-
-.scroll-button:hover {
-  opacity: 1;
-}
-
-.scroll-button.left {
-  left: -20px;
-}
-
-.scroll-button.right {
-  right: -20px;
-}
-
-/* Gradients */
-.hero-gradient {
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(0, 0, 0, 0.4) 40%,
-    var(--background-primary) 100%
-  );
-}
-
-/* Reset base styles */
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-  background-color: var(--background-primary);
-}
-
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  overflow-x: hidden;
-}
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
-  min-height: 100vh;
-  background-color: var(--background-primary);
-}
-
-html, 
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  overflow-x: hidden;
-  background: var(--background-primary);
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  background: var(--background-primary);
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
 #__next {
   height: 100%;
   width: 100%;
-}
-
-.center-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 /* Custom scrollbar */
@@ -374,58 +124,138 @@ body {
 }
 
 @layer utilities {
-  .scrollbar-hide::-webkit-scrollbar { 
+  /* Layout Components */
+  .musish-container {
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--background-primary);
+    padding-bottom: 24px;
+  }
+
+  .musish-section {
+    margin-bottom: 40px;
+  }
+
+  /* Scroll Container */
+  .scroll-container {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 4px 0 20px 0;
+  }
+
+  .scroll-container::-webkit-scrollbar {
     display: none;
   }
-  
+
+  /* Horizontal Grid */
+  .horizontal-grid {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px;
+    min-width: min-content;
+    
+    @media (min-width: 768px) {
+      gap: 24px;
+    }
+  }
+
+  /* Card Components */
+  .card-container {
+    position: relative;
+    flex: 0 0 auto;
+    width: 80px;
+    min-width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+    
+    @media (min-width: 768px) {
+      width: 180px;
+      min-width: 180px;
+    }
+  }
+
+  .card-container:hover {
+    transform: scale(1.05);
+    z-index: 2;
+  }
+
+  .musish-card-image {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .card-container:hover .musish-card-image {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .musish-card-content {
+    width: 100%;
+    margin-top: 4px;
+    text-align: center;
+    padding: 0 4px;
+    
+    @media (min-width: 768px) {
+      margin-top: 12px;
+      padding: 0 8px;
+    }
+  }
+
+  .musish-card-title {
+    color: var(--text-primary);
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    
+    @media (min-width: 768px) {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+  }
+
+  .musish-card-subtitle {
+    color: var(--text-secondary);
+    font-size: 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    
+    @media (min-width: 768px) {
+      font-size: 12px;
+    }
+  }
+
+  /* Utility Classes */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 
-  .blur-backdrop {
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
-
-  .text-shadow {
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  .glass-background {
-    background: rgba(28, 28, 28, 0.7);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-  }
-
-  .hover-glass:hover {
-    background: rgba(44, 44, 44, 0.7);
-  }
-
-  .playlist-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    grid-gap: 24px;
-    gap: 24px;
-    padding: 24px;
-  }
-
-  .artwork-gradient {
-    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.9) 100%);
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 
   .text-truncate {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .sidebar-width {
-    width: 260px;
-  }
-
-  .main-content {
-    width: calc(100% - 260px);
   }
 
   /* Animations */
@@ -444,417 +274,7 @@ body {
     animation: slideUp 0.3s ease-out forwards;
   }
 
-  /* Media Player */
-  .media-player {
-    height: 90px;
-    background: var(--background-secondary);
-    border-top: 1px solid var(--background-tertiary);
-  }
-
-  .progress-bar {
-    height: 4px;
-    background: var(--background-tertiary);
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: var(--system-pink);
-    transition: width 0.1s linear;
-  }
-
-  /* Button styles */
-  .apple-button {
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: 500;
-    transition: all 0.2s;
-    background: var(--background-tertiary);
-    color: var(--text-primary);
-    text-align: center;
-    margin: 0 auto;
-    display: block;
-  }
-
-  .apple-button:hover {
-    background: var(--background-secondary);
-    transform: scale(1.02);
-  }
-
-  /* Artwork hover effect */
-  .artwork-container {
-    position: relative;
-    overflow: hidden;
-    border-radius: 6px;
-  }
-
-  .artwork-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    transition: opacity 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .artwork-container:hover .artwork-overlay {
-    opacity: 1;
-  }
-
-  .logo-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    margin: 0 auto;
-    text-align: center;
-    background: var(--background-tertiary);
-    border-radius: 8px;
-    padding: 0.5rem;
-  }
-
-  .logo-image {
-    position: relative;
-    display: block;
-    width: 32px;
-    height: 32px;
-    margin: auto;
-  }
-
-  /* Text alignment styles */
-  h1, h2, h3, h4, h5, h6, p, .text-center {
-    margin-left: 0; /* Change from auto */
-    margin-right: 0; /* Change from auto */
-    width: 100%;
-  }
- 
-  /* Center all text within motion divs */
-  .motion-div {
-    text-align: center;
-    width: 100%;
-  }
-
-  .login-container {
-    background: var(--background-secondary);
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    width: min(90%, 400px); /* Reduced max-width for better proportions */
-    height: auto; /* Let content determine height */
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 1.5rem;
-    position: relative; /* Remove absolute positioning */
-    margin: auto; /* Center using margin */
-  }
-
-  /* Add specific class for login page */
-  .login-page {
-    min-height: 100vh;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--background-primary);
-  }
-
-  /* Add natural scrolling for content pages */
-  .content-page {
-    background: rgb(var(--background-start-rgb));
-    min-height: 100%;
-  }
-
-  /* Add these utility classes */
-  .page-fixed {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--background-primary);
-    overflow: hidden;
-  }
-
-  .page-scroll {
-    overflow-y: auto;
-    min-height: 100vh;
-    width: 100vw;
-    min-height: 100vh;
-    width: 100%;
-    background-color: var(--background-primary);
-  }
-
-  /* Add Musish-specific styles */
-  .musish-container {
-    background: var(--background-primary);
-    min-height: 100vh;
-    width: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: relative;
-    padding-bottom: 24px;
-  }
-
-  .musish-section {
-    margin-bottom: 40px;
-  }
-
-  .musish-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    grid-gap: 24px;
-    gap: 24px;
-    width: 100%;
-  }
-
-  .musish-card {
-    width: 100%;
-    aspect-ratio: 1;
-    position: relative;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-  }
-
-  .musish-card:hover {
-    transform: scale(1.05);
-  }
-
-  .musish-card-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  }
-
-  .musish-card-content {
-    margin-top: 12px;
-    text-align: center;
-    width: 100%;
-    padding: 0 8px;
-  }
-
-  .musish-card-title {
-    color: var(--text-primary);
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .musish-card-subtitle {
-    color: var(--text-secondary);
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* Add these styles */
-  .scroll-container {
-    position: relative;
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 4px 0 20px 0;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .horizontal-grid {
-    display: flex;
-    gap: 24px;
-    padding: 0 4px;
-    min-width: min-content;
-  }
-
-  .card-container {
-    flex: 0 0 auto;
-    width: 180px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transform: scale(1);
-    transition: all 0.3s ease-in-out;
-    will-change: transform;
-  }
-
-  .card-container:hover {
-    transform: scale(1.05);
-    z-index: 10;
-  }
-
-  .musish-card-image {
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    transition: all 0.3s ease-in-out;
-    -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-  }
-
-  .card-container:hover .musish-card-image {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  }
-
-  .musish-card-content {
-    width: 100%;
-    padding: 0 8px;
-    text-align: center;
-    transition: all 0.3s ease-in-out;
-  }
-
-  /* Add scroll buttons */
-  .scroll-button {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-
-  .scroll-container:hover .scroll-button {
-    opacity: 1;
-  }
-
-  .scroll-button.left {
-    left: 8px;
-  }
-
-  .scroll-button.right {
-    right: 8px;
-  }
-
-  /* Add or update card container styles */
-  .card-container {
-    width: 180px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: transform 0.2s ease-in-out;
-    cursor: pointer;
-  }
-
-  .card-container:hover {
-    transform: scale(1.05);
-  }
-
-  /* Update image container styles */
-  .musish-card-image {
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    transition: transform 0.2s ease-in-out;
-  }
-
-  /* Add shadow and slight zoom on hover */
-  .card-container:hover .musish-card-image {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  }
-
-  /* Make sure content stays on top of other cards when zoomed */
-  .musish-card-content {
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Remove any existing card-container styles from @layer utilities and add these base styles */
-
-  .scroll-container {
-    position: relative;
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-    padding: 4px 0 20px 0;
-  }
-
-  .horizontal-grid {
-    display: flex;
-    gap: 24px;
-    padding: 0 4px;
-    /* Remove any width constraints */
-  }
-
-  .card-container {
-    position: relative;
-    flex: 0 0 180px; /* Keep fixed width for cards */
-    width: 180px;
-    min-width: 180px;
-    /* Remove any max-width constraints */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 1;
-  }
-
-  .card-container:hover {
-    transform: scale(1.05);
-    z-index: 2;
-  }
-
-  .musish-card-image {
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-    border-radius: 8px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-
-  .card-container:hover .musish-card-image {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  }
-
-  .musish-card-content {
-    width: 100%;
-    margin-top: 12px;
-    text-align: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .musish-card-title {
-    color: var(--text-primary);
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .musish-card-subtitle {
-    color: var(--text-secondary);
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
+  /* Gradient Effects */
   .hero-gradient {
     background: linear-gradient(
       180deg,
@@ -863,4 +283,4 @@ body {
       var(--background-primary) 100%
     );
   }
-}
+} 

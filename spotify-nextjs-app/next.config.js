@@ -6,6 +6,7 @@ const nextConfig = {
     SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
     SPOTIFY_REDIRECT_URI: process.env.SPOTIFY_REDIRECT_URI,
+    NEXT_PUBLIC_LASTFM_API_KEY: process.env.NEXT_PUBLIC_LASTFM_API_KEY,
   },
   images: {
     remotePatterns: [
@@ -25,6 +26,7 @@ const nextConfig = {
         pathname: '**',
       }
     ],
+    deviceSizes: [140, 180, 280, 360, 420, 768], // Optimize for mobile first
   }
 }
 

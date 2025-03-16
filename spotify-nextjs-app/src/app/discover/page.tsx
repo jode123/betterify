@@ -86,94 +86,172 @@ const ErrorState = () => (
   </div>
 )
 
-// Add this component near your other helper components
-const ImageWithFallback = ({ src, alt, className, isArtist }: { src: string; alt: string; className: string; isArtist?: boolean }) => {
-  const [error, setError] = useState(false)
-  const defaultImage = isArtist ? '/default-artist.png' : '/default-album.png'
+// Update the ImageWithFallback component
+const ImageWithFallback = ({ src, alt, className, isArtist }: { 
+  src: string; 
+  alt: string; 
+  className: string; 
+  isArtist?: boolean 
+}) => {
+  const [imgSrc, setImgSrc] = useState<string>(src);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const defaultImage = isArtist ? '/default-artist.png' : '/default-album.png';
+
+  useEffect(() => {
+    setImgSrc(src);
+    setIsLoading(true);
+    setHasError(false);
+  }, [src]);
+
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+  };
+
+  const handleImageError = () => {
+    console.log('Image failed to load:', src);
+    setImgSrc(defaultImage);
+    setIsLoading(false);
+    setHasError(true);
+  };
 
   return (
-    <img 
-      src={error ? defaultImage : getProxiedImageUrl(src)}
-      alt={alt}
-      className={className}
-      onError={() => setError(true)}
-      loading="lazy"
-    />
-  )
-}
+    <div className={`relative ${className}`}>
+      {isLoading && (
+        <div className="absolute inset-0 bg-[var(--background-secondary)] animate-pulse rounded-lg" />
+      )}
+      <img 
+        src={imgSrc}
+        alt={alt}
+        className={`w-full h-full object-cover rounded-lg transition-opacity duration-300 ${
+          isLoading ? 'opacity-0' : 'opacity-100'
+        }`}
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        loading="lazy"
+      />
+    </div>
+  );
+};
 
 // Update the fetch function to use proper types
 const fetchLastFmData = async () => {
   const API_KEY = process.env.NEXT_PUBLIC_LASTFM_API_KEY
   const BASE_URL = 'https://ws.audioscrobbler.com/2.0'
-  
+
   try {
-    const [artistsRes, albumsRes, tracksRes, featuredRes] = await Promise.all([
-      // Updated artist endpoint to include more image metadata
-      fetch(`${BASE_URL}/?method=chart.gettopartists&api_key=${API_KEY}&format=json&limit=15&size=mega`),
-      fetch(`${BASE_URL}/?method=tag.gettopalbums&tag=indie&api_key=${API_KEY}&format=json&limit=15`),
-      fetch(`${BASE_URL}/?method=chart.gettoptracks&api_key=${API_KEY}&format=json&limit=15`),
-      // Increased the limit from 12 to 50 for featured albums
-      fetch(`${BASE_URL}/?method=tag.gettopalbums&tag=featured&api_key=${API_KEY}&format=json&limit=50`)
-    ])
+    if (!API_KEY) {
+      console.error('API Key missing at runtime');
+      throw new Error('Last.fm API key is missing');
+    }
 
+    // Create the requests with proper error handling
+    const makeRequest = async (method: string, tag?: string) => {
+      const params = new URLSearchParams({
+        method,
+        api_key: API_KEY,
+        format: 'json',
+        limit: '15'
+      });
+      if (tag) params.append('tag', tag);
+      
+      const response = await fetch(`${BASE_URL}/?${params}`);
+      if (!response.ok) {
+        console.error(`${method} request failed:`, {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url.replace(API_KEY, 'REDACTED')
+        });
+        return null;
+      }
+      return response.json();
+    };
+
+    // Make all requests with individual error handling
     const [artistsData, albumsData, tracksData, featuredData] = await Promise.all([
-      artistsRes.json(),
-      albumsRes.json(),
-      tracksRes.json(),
-      featuredRes.json()
-    ])
+      makeRequest('chart.gettopartists'),
+      makeRequest('tag.gettopalbums', 'indie'),
+      makeRequest('chart.gettoptracks'),
+      makeRequest('tag.gettopalbums', 'featured')
+    ]);
 
-    // Add console.log to debug artist data
-    console.log('Raw artist data:', artistsData.artists.artist[0])
+    // Process artists if available
+    const artists = artistsData?.artists?.artist
+      ?.filter((artist: LastFmArtist) => artist?.name && artist?.image?.length > 0)
+      ?.map((artist: LastFmArtist) => {
+        const artistImage = artist.image
+          .reverse()
+          .find(img => img?.['#text'] && img['#text'].startsWith('http'))?.['#text']
+          || '/default-artist.png';
 
-    const artists = artistsData.artists.artist.map((artist: LastFmArtist) => ({
-      name: artist.name,
-      // Try multiple image sizes in order of preference
-      image: artist.image.find(img => img.size === 'mega')?.['#text'] ||
-             artist.image.find(img => img.size === 'extralarge')?.['#text'] ||
-             artist.image.find(img => img.size === 'large')?.['#text'] ||
-             '/default-artist.png',
-      listeners: artist.listeners
-    }))
+        return {
+          name: artist.name,
+          image: artistImage,
+          listeners: artist.listeners || '0'
+        };
+      }) || [];
 
-    const albums = albumsData.albums.album.map((album: LastFmAlbum) => ({
-      name: album.name,
-      artist: album.artist.name,
-      image: album.image.find(img => img.size === 'extralarge')?.['#text'] || album.image[3]?.['#text']
-    }))
+    // Process albums if available
+    const albums = albumsData?.albums?.album
+      ?.filter((album: LastFmAlbum) => album?.name && album?.artist?.name && album?.image?.length > 0)
+      ?.map((album: LastFmAlbum) => ({
+        name: album.name,
+        artist: album.artist.name,
+        image: album.image
+          .reverse()
+          .find(img => img?.['#text'] && img['#text'].startsWith('http'))?.['#text']
+          || '/default-album.png'
+      })) || [];
 
-    const tracks = tracksData.tracks.track.map((track: LastFmTrack) => ({
-      name: track.name,
-      artist: track.artist.name,
-      album: track.album?.title || '',
-      duration: track.duration,
-      playCount: track.playcount
-    }))
+    // Process featured albums
+    const featuredAlbums = featuredData?.albums?.album
+      ?.filter((album: LastFmAlbum) => album?.name && album?.artist?.name && album?.image?.length > 0)
+      ?.map((album: LastFmAlbum) => {
+        const albumImage = album.image
+          .reverse()
+          .find(img => img?.['#text'] && img['#text'].startsWith('http'))?.['#text']
+          || '/default-album.png';
 
-    const featuredAlbums = featuredData.albums.album.map((album: LastFmAlbum) => ({
-      name: album.name,
-      artist: album.artist.name,
-      image: album.image.find(img => img.size === 'extralarge')?.['#text'] || 
-             album.image.find(img => img.size === 'large')?.['#text'] || 
-             album.image[3]?.['#text'],
-      playcount: album.playcount
-    }))
+        return {
+          name: album.name,
+          artist: album.artist.name,
+          image: albumImage,
+          playcount: album.playcount || '0'
+        };
+      }) || [];
 
-    console.log('Processed data:', { artists, albums, tracks, featuredAlbums })
+    return { artists, albums, tracks: [], featuredAlbums };
 
-    return { artists, albums, tracks, featuredAlbums }
   } catch (error) {
-    console.error('Error fetching Last.fm data:', error)
-    throw error
+    console.error('Last.fm API Error:', error);
+    return {
+      artists: [],
+      albums: [],
+      tracks: [],
+      featuredAlbums: []
+    };
   }
-}
+};
 
 // Add this helper function before your component
 const ScrollButton = ({ direction, onClick }: { direction: 'left' | 'right'; onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className={`scroll-button ${direction}`}
+    className={`
+      scroll-button ${direction}
+      hidden md:flex /* Hide on mobile since we'll use native scrolling */
+      items-center justify-center
+      w-10 h-10
+      bg-black/50 
+      rounded-full
+      text-white
+      absolute
+      top-1/2
+      -translate-y-1/2
+      ${direction === 'left' ? 'left-2' : 'right-2'}
+      z-10
+    `}
   >
     {direction === 'left' ? '←' : '→'}
   </button>
@@ -201,134 +279,163 @@ export default function DiscoverPage() {
     }
   }, [])
 
+  // Add this inside your DiscoverPage component
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  }
+
+  const handleTouchEnd = (ref: React.RefObject<HTMLDivElement>) => {
+    if (!ref.current) return;
+    
+    const swipeDistance = touchStart - touchEnd;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(swipeDistance) > minSwipeDistance) {
+      scroll(ref, swipeDistance > 0 ? 'right' : 'left');
+    }
+  }
+
+  // Add debug state
+  const [debug, setDebug] = useState({
+    artistsLength: 0,
+    albumsLength: 0,
+  });
+
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
+      console.log('API Key present:', !!process.env.NEXT_PUBLIC_LASTFM_API_KEY);
       try {
-        const { artists, albums, tracks, featuredAlbums } = await fetchLastFmData()
-        setTopArtists(artists)
-        setTopAlbums(albums)
-        setTracks(tracks)
-        setFeaturedAlbums(featuredAlbums)
-        setLoading(false)
+        const data = await fetchLastFmData();
+        console.log('Fetched data:', data); // Debug log
+        
+        if (data.artists && data.featuredAlbums) {
+          setTopArtists(data.artists);
+          setFeaturedAlbums(data.featuredAlbums);
+          // Update debug info
+          setDebug({
+            artistsLength: data.artists.length,
+            albumsLength: data.featuredAlbums.length,
+          });
+        }
       } catch (error) {
-        setLoading(false)
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   const router = useRouter()
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[var(--background-primary)]">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-[var(--text-primary)] text-xl"
-        >
-          Loading...
-        </motion.div>
-      </div>
-    )
-  }
-
+  // Modified return statement with simpler structure
   return (
-    <div className="musish-container">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="max-w-7xl mx-auto pb-24"
-      >
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-bold text-[var(--text-primary)] mb-12"
-        >
-          Discover
-        </motion.h1>
+    <div className="min-h-screen bg-[var(--background-primary)]">
+      {loading ? (
+        <LoadingState />
+      ) : (
+        <div className="px-4 py-8">
+          <h1 className="text-2xl md:text-4xl font-bold text-[var(--text-primary)] mb-6 md:mb-8">
+            Discover
+          </h1>
 
-        {/* Artists Section */}
-        <div className="musish-section">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-[var(--text-primary)]">Top Artists</h2>
-              <p className="text-[var(--text-secondary)] text-sm mt-1">
-                Trending artists from around the world
-              </p>
-            </div>
-            <button className="text-[var(--accent-color)] hover:text-[var(--system-pink)] text-sm font-medium transition-colors">
-              See All
-            </button>
-          </div>
-          <div className="relative">
-            <div ref={artistsRef} className="scroll-container">
-              <div className="horizontal-grid">
-                {topArtists.map((artist, index) => (
-                  <motion.div
-                    key={artist.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="card-container cursor-pointer"
-                    onClick={() => router.push(`/artist/${encodeURIComponent(artist.name)}`)}
-                  >
-                    <ImageWithFallback 
-                      src={artist.image}
-                      alt={`${artist.name} artist photo`}
-                      className="musish-card-image rounded-full"
-                      isArtist={true}
-                    />
-                    <div className="musish-card-content">
-                      <h3 className="musish-card-title">{artist.name}</h3>
-                      <p className="musish-card-subtitle">
-                        {parseInt(artist.listeners).toLocaleString()} listeners
-                      </p>
+          {/* Artists Section */}
+          <section className="mb-6 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-4">
+              Top Artists
+            </h2>
+            
+            <div className="relative">
+              <div 
+                className="overflow-x-auto scrollbar-hide -mx-4 px-4"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none'
+                }}
+              >
+                <div className="flex gap-3 md:gap-4">
+                  {topArtists.map((artist, index) => (
+                    <div 
+                      key={index}
+                      className="flex-none w-[120px] md:w-[160px]"
+                    >
+                      <div className="aspect-square rounded-lg overflow-hidden bg-[var(--background-secondary)]">
+                        <ImageWithFallback
+                          src={artist.image}
+                          alt={artist.name}
+                          className="w-full h-full object-cover"
+                          isArtist={true}
+                        />
+                      </div>
+                      <div className="mt-2">
+                        <h3 className="text-sm md:text-base text-[var(--text-primary)] font-medium truncate">
+                          {artist.name}
+                        </h3>
+                        <p className="text-xs md:text-sm text-[var(--text-secondary)] truncate">
+                          {parseInt(artist.listeners).toLocaleString()} listeners
+                        </p>
+                      </div>
                     </div>
-                  </motion.div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-            <ScrollButton direction="left" onClick={() => scroll(artistsRef, 'left')} />
-            <ScrollButton direction="right" onClick={() => scroll(artistsRef, 'right')} />
-          </div>
-        </div>
+          </section>
 
-        {/* Featured Albums Section */}
-        <div className="musish-section mt-16">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-[var(--text-primary)]">Featured Albums</h2>
-              <p className="text-[var(--text-secondary)] text-sm mt-1">
-                Curated selection of must-hear albums
-              </p>
-            </div>
-            <button className="text-[var(--accent-color)] hover:text-[var(--system-pink)] text-sm font-medium transition-colors">
-              See All
-            </button>
-          </div>
-          <div className="relative">
-            <div ref={albumsRef} className="scroll-container">
-              <div className="horizontal-grid">
-                {featuredAlbums.slice(0, 50).map((album, index) => ( // Show up to 50 albums
-                  <PlaylistCard
-                    key={album.name}
-                    item={{
-                      ...album,
-                      type: 'featured',
-                      artist: album.artist
-                    }}
-                  />
-                ))}
+          {/* Featured Albums Section */}
+          <section className="mb-6 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-[var(--text-primary)] mb-4">
+              Featured Albums
+            </h2>
+            
+            <div className="relative">
+              <div 
+                className="overflow-x-auto scrollbar-hide -mx-4 px-4"
+                style={{
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none'
+                }}
+              >
+                <div className="flex gap-3 md:gap-4">
+                  {featuredAlbums.map((album, index) => (
+                    <div 
+                      key={index}
+                      className="flex-none w-[80px] md:w-[160px]" // Smaller width on mobile
+                    >
+                      <div className="aspect-square rounded-lg overflow-hidden bg-[var(--background-secondary)]">
+                        <ImageWithFallback
+                          src={album.image}
+                          alt={album.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="mt-2 px-1">
+                        <h3 className="text-xs md:text-sm text-[var(--text-primary)] font-medium truncate">
+                          {album.name}
+                        </h3>
+                        <p className="text-[10px] md:text-xs text-[var(--text-secondary)] truncate">
+                          {album.artist}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <ScrollButton direction="left" onClick={() => scroll(albumsRef, 'left')} />
-            <ScrollButton direction="right" onClick={() => scroll(albumsRef, 'right')} />
-          </div>
+          </section>
         </div>
-
-      </motion.div>
+      )}
     </div>
-  )
+  );
 }

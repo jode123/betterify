@@ -22,7 +22,7 @@
     "react-transition-group": "^4.4.5",
     "spotify-web-api-node": "^5.0.2",
     "tailwind": "^4.0.0",
-    "vercel": "^41.4.0"
+    "vercel": "^41.4.1"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
