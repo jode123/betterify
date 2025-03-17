@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { ImageWithFallback } from '@/components/ImageWithFallback'
+import { searchMusic, getAudioStream } from '@/utils/pipedApi'
+import { PIPED_INSTANCE, PIPED_API_INSTANCE } from '@/config/piped'
+import { MusicPlayer } from '@/components/MusicPlayer'
 
 interface AlbumTrack {
   name: string;
@@ -21,6 +24,10 @@ export default function AlbumPage() {
   const params = useParams()
   const [album, setAlbum] = useState<AlbumDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [currentTrack, setCurrentTrack] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   useEffect(() => {
     const fetchAlbumDetails = async () => {
@@ -82,11 +89,60 @@ export default function AlbumPage() {
     fetchAlbumDetails()
   }, [params])
 
+  const handleTrackClick = async (track: AlbumTrack, index: number) => {
+    if (!album) return; // Add null check for album
+    
+    setIsLoading(true);
+    // Include album name in search to improve accuracy
+    const query = `${track.artist} ${track.name} ${album.name}`;
+    
+    try {
+      const result = await searchMusic(query);
+      if (result?.id) {
+        const audioUrl = await getAudioStream(result.id);
+        if (audioUrl) {
+          setCurrentTrack(index);
+          setCurrentVideoId(result.id);
+          setIsPlaying(true);
+          console.log('Playing track:', {
+            track: track.name,
+            videoTitle: result.title,
+            audioUrl
+          });
+        } else {
+          console.error('No audio stream found for:', result.title);
+        }
+      } else {
+        console.error('No valid video ID found for:', query);
+      }
+    } catch (error) {
+      console.error('Error playing track:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const handleTrackEnd = () => {
+    // Play next track if available
+    if (currentTrack !== null && currentTrack < album!.tracks.length - 1) {
+      handleTrackClick(album!.tracks[currentTrack + 1], currentTrack + 1)
+    } else {
+      setCurrentTrack(null)
+      setCurrentVideoId(null)
+      setIsPlaying(false)
+    }
+  }
+
+  const handlePlaybackError = () => {
+    console.error('Playback error')
+    setIsPlaying(false)
+  }
+
   if (loading) return <div>Loading...</div>
   if (!album) return <div>Album not found</div>
 
   return (
-    <div className="min-h-screen bg-[var(--background-primary)] p-4 md:p-8">
+    <div className="min-h-screen bg-[var(--background-primary)] p-4 md:p-8 pb-24">
       <div className="max-w-4xl mx-auto">
         {/* Album Header */}
         <div className="flex flex-col md:flex-row gap-6 mb-8">
@@ -113,9 +169,15 @@ export default function AlbumPage() {
         {/* Tracks List */}
         <div className="space-y-2">
           {album.tracks.map((track, index) => (
-            <div key={index} className="track-container">
+            <div 
+              key={index} 
+              className={`track-container cursor-pointer hover:bg-[var(--background-tertiary)] ${
+                currentTrack === index ? 'bg-[var(--background-tertiary)]' : ''
+              }`}
+              onClick={() => handleTrackClick(track, index)}
+            >
               <span className="track-number">
-                {(index + 1).toString().padStart(2, '0')}
+                {isLoading && currentTrack === index ? '...' : (index + 1).toString().padStart(2, '0')}
               </span>
               
               <div className="track-art">
@@ -123,6 +185,7 @@ export default function AlbumPage() {
                   src={album.image}
                   alt={album.name}
                   className="w-full h-full object-cover"
+                  priority={index < 5}
                 />
               </div>
               
@@ -143,6 +206,14 @@ export default function AlbumPage() {
           ))}
         </div>
       </div>
+      
+      {/* Add Music Player */}
+      <MusicPlayer
+        videoId={currentVideoId}
+        isPlaying={isPlaying}
+        onEnded={handleTrackEnd}
+        onError={handlePlaybackError}
+      />
     </div>
-  );
+  )
 }
