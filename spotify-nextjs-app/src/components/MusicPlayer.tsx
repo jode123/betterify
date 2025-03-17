@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { getAudioStream } from '@/utils/pipedApi'
 
 interface MusicPlayerProps {
   videoId: string | null
@@ -11,51 +12,46 @@ interface MusicPlayerProps {
 
 export function MusicPlayer({ videoId, isPlaying, onEnded, onError }: MusicPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!videoId) return
+    const loadAndPlay = async () => {
+      if (!videoId || !audioRef.current) return
 
-    const playAudio = async () => {
-      setLoading(true)
       try {
-        if (audioRef.current) {
-          // Use Piped's stream endpoint
-          const streamUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`
-          const response = await fetch(streamUrl)
-          const data = await response.json()
-          
-          // Get the audio-only stream URL
-          const audioStream = data.audioStreams?.[0]?.url
-          if (audioStream) {
-            audioRef.current.src = audioStream
-            if (isPlaying) {
-              await audioRef.current.play()
-            }
-          } else {
-            onError()
+        const streamUrl = await getAudioStream(videoId)
+        if (streamUrl) {
+          audioRef.current.src = streamUrl
+          if (isPlaying) {
+            await audioRef.current.play()
           }
         }
       } catch (error) {
-        console.error('Error playing audio:', error)
+        console.error('Error loading audio:', error)
         onError()
-      } finally {
-        setLoading(false)
       }
     }
 
-    playAudio()
+    loadAndPlay()
   }, [videoId, isPlaying, onError])
 
+  useEffect(() => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.play().catch(onError)
+      } else {
+        audioRef.current.pause()
+      }
+    }
+  }, [isPlaying, onError])
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[var(--background-secondary)] p-4">
+    <div className="fixed bottom-0 left-0 right-0 bg-[var(--background-secondary)] p-4 shadow-lg">
       <audio
         ref={audioRef}
         onEnded={onEnded}
         onError={onError}
-        className="hidden"
+        className="w-full"
       />
-      {loading && <div>Loading audio...</div>}
     </div>
   )
 }

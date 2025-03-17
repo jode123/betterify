@@ -2,25 +2,29 @@ import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const imageUrl = searchParams.get('url')
+  const url = searchParams.get('url')
 
-  if (!imageUrl) {
+  if (!url) {
     return new NextResponse('Missing URL parameter', { status: 400 })
   }
 
   try {
-    const response = await fetch(imageUrl)
-    const buffer = await response.arrayBuffer()
-    const headers = new Headers()
-    headers.set('Content-Type', response.headers.get('Content-Type') || 'image/jpeg')
-    headers.set('Cache-Control', 'public, max-age=31536000')
-
-    return new NextResponse(buffer, {
-      headers,
-      status: 200,
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    })
+    
+    const data = await response.arrayBuffer()
+    
+    return new NextResponse(data, {
+      headers: {
+        'Content-Type': response.headers.get('Content-Type') || 'application/octet-stream',
+        'Cache-Control': 'public, max-age=31536000'
+      }
     })
   } catch (error) {
-    console.error('Image proxy error:', error)
-    return new NextResponse('Error fetching image', { status: 500 })
+    console.error('Proxy error:', error)
+    return new NextResponse('Error proxying request', { status: 500 })
   }
 }

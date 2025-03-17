@@ -1,5 +1,10 @@
 {
   "pages": {
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
+    ],
     "/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -16,15 +21,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/discover/layout.js"
     ],
-    "/artist/[name]/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/artist/[name]/page.js"
-    ],
-    "/album/[name]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/album/[name]/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

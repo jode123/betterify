@@ -1,0 +1,89 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    var(--background-primary) 0%,
+    var(--background-secondary) 100%
+  );
+  padding: 24px;
+}
+
+.login-card {
+  background: var(--background-secondary);
+  padding: 48px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+/* Add this new centered container class */
+.centered-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.login-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+}
+
+.login-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  font-size: 1.125rem;
+}
+
+.login-button {
+  background: var(--accent-color);
+  color: white;
+  padding: 16px 32px;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: transform 0.2s, background-color 0.2s;
+  width: 100%;
+}
+
+.login-button:hover {
+  transform: scale(1.05);
+  background: var(--system-pink);
+}
+
+.skip-button {
+  margin-top: 16px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.skip-button:hover {
+  color: var(--text-primary);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

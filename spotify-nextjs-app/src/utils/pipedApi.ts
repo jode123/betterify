@@ -1,4 +1,4 @@
-import { PIPED_API_INSTANCE, PIPED_INSTANCE } from '@/config/piped'
+import { PIPED_INSTANCE } from '@/config/piped'
 
 interface PipedSearchItem {
   type: string;
@@ -50,14 +50,8 @@ export async function searchMusic(query: string): Promise<PipedSearchResult | nu
     console.log('Searching for:', searchQuery)
 
     const response = await fetch(
-      `${PIPED_API_INSTANCE}/api/v1/search?q=${encodeURIComponent(searchQuery)}&filter=music`,
-      { 
-        headers: { 
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        } 
-      }
-    );
+      `/api/piped?q=${encodeURIComponent(searchQuery)}&filter=music`
+    )
 
     if (!response.ok) {
       console.error('API Response not OK:', response.status);
@@ -103,27 +97,14 @@ export async function searchMusic(query: string): Promise<PipedSearchResult | nu
 
 export async function getAudioStream(videoId: string): Promise<string | null> {
   try {
-    console.log('Fetching audio stream for:', videoId);
-    const response = await fetch(`${PIPED_API_INSTANCE}/streams/${videoId}`);
+    const response = await fetch(`/api/piped?videoId=${videoId}`);
     
     if (!response.ok) {
-      console.error('Stream fetch failed:', response.status);
-      throw new Error('Failed to fetch stream data');
+      throw new Error('Failed to fetch audio stream');
     }
     
     const data = await response.json();
-    console.log('Stream data received:', data);
-    
-    // Get highest quality audio stream
-    const audioStream = data.audioStreams
-      ?.sort((a: any, b: any) => parseInt(b.bitrate) - parseInt(a.bitrate))[0];
-      
-    if (!audioStream?.url) {
-      console.error('No audio stream found');
-      return null;
-    }
-
-    return audioStream.url;
+    return data.audioStreams?.[0]?.url || null;
   } catch (error) {
     console.error('Error fetching audio stream:', error);
     return null;

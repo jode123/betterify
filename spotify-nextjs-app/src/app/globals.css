@@ -67,6 +67,9 @@ html, body {
     overflow-x: hidden;
     background: var(--background-primary);
     padding-bottom: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
   }
 
   .musish-section {
@@ -105,19 +108,10 @@ html, body {
   /* Card Components */
   .card-container {
     position: relative;
-    flex: 0 0 auto;
-    width: 80px;
-    min-width: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: transform 0.2s ease;
+    width: 100%;
     cursor: pointer;
-    
-    @media (min-width: 768px) {
-      width: 180px;
-      min-width: 180px;
-    }
+    transition: transform 0.2s ease;
+    z-index: 1;
   }
 
   .card-container:hover {
@@ -130,50 +124,10 @@ html, body {
     aspect-ratio: 1;
     object-fit: cover;
     border-radius: 8px;
-    transition: all 0.2s ease;
-  }
-
-  .card-container:hover .musish-card-image {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   }
 
   .musish-card-content {
-    width: 100%;
-    margin-top: 4px;
-    text-align: center;
-    padding: 0 4px;
-    
-    @media (min-width: 768px) {
-      margin-top: 12px;
-      padding: 0 8px;
-    }
-  }
-
-  .musish-card-title {
-    color: var(--text-primary);
-    font-size: 10px;
-    font-weight: 600;
-    margin-bottom: 2px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    
-    @media (min-width: 768px) {
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-  }
-
-  .musish-card-subtitle {
-    color: var(--text-secondary);
-    font-size: 9px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    
-    @media (min-width: 768px) {
-      font-size: 12px;
-    }
+    padding: 12px;
   }
 
   /* Utility Classes */
@@ -321,5 +275,13 @@ html, body {
     font-size: 14px;
     font-variant-numeric: tabular-nums;
     padding-left: 16px;
+  }
+
+  .content-centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
   }
 }
