@@ -1,6 +1,6 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
+  "/artist/[name]/page": "app/artist/[name]/page.js",
+  "/album/[name]/page": "app/album/[name]/page.js",
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/discover/page": "app/discover/page.js"
 }

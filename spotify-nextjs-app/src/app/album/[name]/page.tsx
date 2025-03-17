@@ -1,108 +1,148 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { ImageWithFallback } from '@/components/ImageWithFallback'
 
-export default function AlbumPage({ params }: { params: { artist: string, name: string } }) {
-  const router = useRouter()
+interface AlbumTrack {
+  name: string;
+  duration: string;
+  artist: string;
+}
+
+interface AlbumDetails {
+  name: string;
+  artist: string;
+  image: string;
+  tracks: AlbumTrack[];
+}
+
+export default function AlbumPage() {
+  const params = useParams()
+  const [album, setAlbum] = useState<AlbumDetails | null>(null)
   const [loading, setLoading] = useState(true)
-  const [album, setAlbum] = useState<any>(null)
-  const [tracks, setTracks] = useState<any[]>([])
 
   useEffect(() => {
-    const fetchAlbumData = async () => {
+    const fetchAlbumDetails = async () => {
       const API_KEY = process.env.NEXT_PUBLIC_LASTFM_API_KEY
-      const BASE_URL = 'https://ws.audioscrobbler.com/2.0'
-      
-      try {
-        const albumRes = await fetch(
-          `${BASE_URL}/?method=album.getinfo&artist=${params.artist}&album=${params.name}&api_key=${API_KEY}&format=json`
-        )
-        const albumData = await albumRes.json()
 
-        setAlbum({
-          name: albumData.album.name,
-          artist: albumData.album.artist,
-          image: albumData.album.image?.find((img: any) => img.size === 'extralarge')?.['#text'],
-          playcount: albumData.album.playcount,
-        })
-
-        setTracks(albumData.album.tracks.track.map((track: any) => ({
-          name: track.name,
-          duration: track.duration,
-        })))
-
+      // Add null check and type assertion for params
+      if (!params?.name || typeof params.name !== 'string') {
+        console.error('Invalid album parameter:', params)
         setLoading(false)
+        return
+      }
+
+      try {
+        // Decode and split the combined name parameter
+        const combined = decodeURIComponent(params.name)
+        const separatorIndex = combined.lastIndexOf(' - ')
+        
+        // Handle case where there's no separator
+        if (separatorIndex === -1) {
+          console.error('Invalid album URL format:', combined)
+          setLoading(false)
+          return
+        }
+
+        const artistName = combined.substring(0, separatorIndex)
+        const albumName = combined.substring(separatorIndex + 3)
+
+        console.log('Fetching:', { artistName, albumName }) // Debug log
+
+        const response = await fetch(
+          `https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=${API_KEY}&artist=${encodeURIComponent(artistName)}&album=${encodeURIComponent(albumName)}&format=json`
+        )
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch album details: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.album) {
+          setAlbum({
+            name: data.album.name,
+            artist: data.album.artist,
+            image: data.album.image?.reverse()[0]?.['#text'] || '/default-album.png',
+            tracks: data.album.tracks?.track?.map((track: any) => ({
+              name: track.name,
+              duration: track.duration || '0',
+              artist: track.artist?.name || data.album.artist
+            })) || []
+          })
+        }
       } catch (error) {
-        console.error('Error:', error)
+        console.error('Error fetching album details:', error)
+      } finally {
         setLoading(false)
       }
     }
 
-    fetchAlbumData()
-  }, [params.artist, params.name])
+    fetchAlbumDetails()
+  }, [params])
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-[var(--text-primary)] text-xl animate-pulse">
-          Loading album...
-        </div>
-      </div>
-    )
-  }
-
-  if (!album) return null
+  if (loading) return <div>Loading...</div>
+  if (!album) return <div>Album not found</div>
 
   return (
-    <div className="album-page-container">
-      <header className="album-header">
-        <div className="flex items-start gap-8">
-          <ImageWithFallback
-            src={album.image}
-            alt={album.name}
-            className="w-64 h-64 rounded-lg shadow-xl"
-          />
-          <div>
-            <h1 className="text-5xl font-bold text-[var(--text-primary)] mb-4">{album.name}</h1>
-            <div className="text-[var(--text-secondary)] text-xl mb-2">
-              By {album.artist}
-            </div>
-            <div className="text-[var(--text-secondary)]">
-              {parseInt(album.playcount).toLocaleString()} total plays
-            </div>
+    <div className="min-h-screen bg-[var(--background-primary)] p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Album Header */}
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
+          <div className="w-full md:w-64 shrink-0">
+            <ImageWithFallback
+              src={album.image}
+              alt={album.name}
+              className="w-full aspect-square rounded-lg shadow-xl"
+            />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl md:text-4xl font-bold text-[var(--text-primary)] mb-2">
+              {album.name}
+            </h1>
+            <p className="text-lg text-[var(--text-secondary)] mb-4">
+              {album.artist}
+            </p>
+            <p className="text-sm text-[var(--text-secondary)]">
+              {album.tracks.length} songs
+            </p>
           </div>
         </div>
-      </header>
 
-      <main className="album-content">
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">Tracks</h2>
-          <div className="space-y-2">
-            {tracks.map((track, index) => (
-              <motion.div
-                key={track.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="flex items-center p-4 hover:bg-[var(--background-secondary)] rounded-lg transition-colors group"
-              >
-                <span className="text-[var(--text-secondary)] w-8">{index + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[var(--text-primary)] font-medium">{track.name}</div>
-                </div>
-                <button className="opacity-0 group-hover:opacity-100 transition-opacity bg-[var(--accent-color)] text-white p-2.5 rounded-full shadow-lg hover:scale-105">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      </main>
+        {/* Tracks List */}
+        <div className="space-y-2">
+          {album.tracks.map((track, index) => (
+            <div key={index} className="track-container">
+              <span className="track-number">
+                {(index + 1).toString().padStart(2, '0')}
+              </span>
+              
+              <div className="track-art">
+                <ImageWithFallback
+                  src={album.image}
+                  alt={album.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              
+              <div className="track-info">
+                <div className="track-title">{track.name}</div>
+                {track.artist !== album.artist && (
+                  <div className="track-artist">{track.artist}</div>
+                )}
+              </div>
+              
+              <span className="track-duration">
+                {track.duration === '0' 
+                  ? '--:--' 
+                  : `${Math.floor(parseInt(track.duration) / 60)}:${(parseInt(track.duration) % 60).toString().padStart(2, '0')}`
+                }
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
-  )
+  );
 }

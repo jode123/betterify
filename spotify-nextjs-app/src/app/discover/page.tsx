@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { getProxiedImageUrl } from '@/lib/imageProxy'
 import { useRouter } from 'next/navigation'
 import { PlaylistCard } from '@/components/PlaylistCard'
+import { TouchHandler } from '@/components/TouchHandler'
 
 // Define Last.fm API types
 interface LastFmImage {
@@ -67,6 +68,17 @@ interface FeaturedAlbum {
   artist: string
   image: string
   playcount?: string
+}
+
+// Add this type near your other interfaces
+interface ArtistCardProps {
+  artist: Artist;
+  onClick: (artist: Artist) => void;
+}
+
+interface AlbumCardProps {
+  album: FeaturedAlbum;
+  onClick: (album: FeaturedAlbum) => void;
 }
 
 // Add to the same file, above the component
@@ -257,6 +269,52 @@ const ScrollButton = ({ direction, onClick }: { direction: 'left' | 'right'; onC
   </button>
 )
 
+// Add this component above your DiscoverPage component
+const ArtistCard = ({ artist, onClick }: ArtistCardProps) => {
+  return (
+    <TouchHandler
+      onTap={() => onClick(artist)}
+      className="card-container"
+    >
+      <div className="aspect-square rounded-lg overflow-hidden bg-[var(--background-secondary)]">
+        <ImageWithFallback
+          src={artist.image}
+          alt={artist.name}
+          className="w-full h-full object-cover"
+          isArtist={true}
+        />
+      </div>
+      <div className="mt-2">
+        <h3 className="musish-card-title">{artist.name}</h3>
+        <p className="musish-card-subtitle">
+          {parseInt(artist.listeners).toLocaleString()} listeners
+        </p>
+      </div>
+    </TouchHandler>
+  );
+};
+
+const AlbumCard = ({ album, onClick }: AlbumCardProps) => {
+  return (
+    <TouchHandler
+      onTap={() => onClick(album)}
+      className="card-container"
+    >
+      <div className="aspect-square rounded-lg overflow-hidden bg-[var(--background-secondary)]">
+        <ImageWithFallback
+          src={album.image}
+          alt={album.name}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div className="mt-2">
+        <h3 className="musish-card-title">{album.name}</h3>
+        <p className="musish-card-subtitle">{album.artist}</p>
+      </div>
+    </TouchHandler>
+  );
+};
+
 export default function DiscoverPage() {
   const [topArtists, setTopArtists] = useState<Artist[]>([])
   const [topAlbums, setTopAlbums] = useState<Album[]>([])
@@ -337,6 +395,15 @@ export default function DiscoverPage() {
 
   const router = useRouter()
 
+  const handleArtistClick = useCallback((artist: Artist) => {
+    router.push(`/artist/${encodeURIComponent(artist.name)}`);
+  }, [router]);
+
+  const handleAlbumClick = useCallback((album: FeaturedAlbum) => {
+    const combinedName = `${album.artist} - ${album.name}`
+    router.push(`/album/${encodeURIComponent(combinedName)}`)
+  }, [router])
+
   // Modified return statement with simpler structure
   return (
     <div className="min-h-screen bg-[var(--background-primary)]">
@@ -365,27 +432,11 @@ export default function DiscoverPage() {
               >
                 <div className="flex gap-3 md:gap-4">
                   {topArtists.map((artist, index) => (
-                    <div 
+                    <ArtistCard
                       key={index}
-                      className="flex-none w-[120px] md:w-[160px]"
-                    >
-                      <div className="aspect-square rounded-lg overflow-hidden bg-[var(--background-secondary)]">
-                        <ImageWithFallback
-                          src={artist.image}
-                          alt={artist.name}
-                          className="w-full h-full object-cover"
-                          isArtist={true}
-                        />
-                      </div>
-                      <div className="mt-2">
-                        <h3 className="text-sm md:text-base text-[var(--text-primary)] font-medium truncate">
-                          {artist.name}
-                        </h3>
-                        <p className="text-xs md:text-sm text-[var(--text-secondary)] truncate">
-                          {parseInt(artist.listeners).toLocaleString()} listeners
-                        </p>
-                      </div>
-                    </div>
+                      artist={artist}
+                      onClick={handleArtistClick}
+                    />
                   ))}
                 </div>
               </div>
@@ -409,26 +460,11 @@ export default function DiscoverPage() {
               >
                 <div className="flex gap-3 md:gap-4">
                   {featuredAlbums.map((album, index) => (
-                    <div 
+                    <AlbumCard
                       key={index}
-                      className="flex-none w-[80px] md:w-[160px]" // Smaller width on mobile
-                    >
-                      <div className="aspect-square rounded-lg overflow-hidden bg-[var(--background-secondary)]">
-                        <ImageWithFallback
-                          src={album.image}
-                          alt={album.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="mt-2 px-1">
-                        <h3 className="text-xs md:text-sm text-[var(--text-primary)] font-medium truncate">
-                          {album.name}
-                        </h3>
-                        <p className="text-[10px] md:text-xs text-[var(--text-secondary)] truncate">
-                          {album.artist}
-                        </p>
-                      </div>
-                    </div>
+                      album={album}
+                      onClick={handleAlbumClick}
+                    />
                   ))}
                 </div>
               </div>
