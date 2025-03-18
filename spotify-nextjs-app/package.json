@@ -5,13 +5,22 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "vercel-build": "next build",
+    "vercel-deploy": "vercel deploy --prod",
+    "deploy": "ts-node scripts/deploy.ts",
+    "cleanup": "ts-node scripts/cleanup.ts",
+    "prebuild": "npm run cleanup",
+    "prevercel-build": "npm run cleanup"
   },
   "dependencies": {
     "@tailwindcss/line-clamp": "^0.4.4",
     "axios": "^1.6.7",
+    "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "express": "^4.21.2",
     "framer-motion": "^12.5.0",
+    "http-proxy-middleware": "^3.0.3",
     "intersection-observer": "^0.12.2",
     "lastfm-node-client": "^2.2.0",
     "next": "^14.1.0",

@@ -152,6 +152,8 @@ export default function AlbumPage({ params }: { params: { name: string } }) {
         isPlaying={isPlaying}
         onEnded={handleTrackEnd}
         onError={handlePlaybackError}
+        trackName={currentTrack !== null ? album.tracks[currentTrack].name : ''}
+        artist={currentTrack !== null ? album.tracks[currentTrack].artist : ''}
       />
     </div>
   )

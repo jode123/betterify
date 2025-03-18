@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  piped-proxy:
+    build:
+      context: .
+      dockerfile: docker/piped-proxy/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - PROXY_PART=proxy
+      - DATA_DIR=/app/data
+    volumes:
+      - piped-data:/app/data
+    networks:
+      - piped-network
+
+  piped-backend:
+    build:
+      context: .
+      dockerfile: docker/piped-backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+    depends_on:
+      - piped-proxy
+    networks:
+      - piped-network
+
+networks:
+  piped-network:
+    driver: bridge
+
+volumes:
+  piped-data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/data
+      o: bind

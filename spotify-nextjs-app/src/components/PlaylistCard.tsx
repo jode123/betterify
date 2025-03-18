@@ -18,8 +18,11 @@ interface PlaylistCardProps {
 export function PlaylistCard({ item }: PlaylistCardProps) {
   const router = useRouter()
 
-  const handleClick = () => {
-    console.log('Clicked album:', item.name) // Debug log
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    console.log('Clicked album:', item.name, item.type) // Debug log
     
     if (item.type === 'album') {
       router.push(`/album/${encodeURIComponent(item.name)}`)
@@ -29,31 +32,26 @@ export function PlaylistCard({ item }: PlaylistCardProps) {
   }
 
   return (
-    <div 
-      className="card-container cursor-pointer"
+    <motion.button
       onClick={handleClick}
-      role="button"
-      tabIndex={0}
+      className="card-container cursor-pointer bg-transparent border-0 text-left w-full"
+      whileHover={{ scale: 1.05 }}
+      transition={{ duration: 0.2 }}
     >
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        transition={{ duration: 0.2 }}
-      >
-        <ImageWithFallback
-          src={getProxiedUrl(item.image)}
-          alt={item.name}
-          className="musish-card-image"
-        />
-        <div className="musish-card-content">
-          <h3 className="musish-card-title">{item.name}</h3>
-          {item.artist && (
-            <p className="musish-card-subtitle text-[var(--text-secondary)]">
-              {item.artist}
-            </p>
-          )}
-        </div>
-      </motion.div>
-    </div>
+      <ImageWithFallback
+        src={getProxiedUrl(item.image)}
+        alt={item.name}
+        className="musish-card-image"
+      />
+      <div className="musish-card-content">
+        <h3 className="musish-card-title text-[var(--text-primary)]">{item.name}</h3>
+        {item.artist && (
+          <p className="musish-card-subtitle text-[var(--text-secondary)]">
+            {item.artist}
+          </p>
+        )}
+      </div>
+    </motion.button>
   )
 }
 
