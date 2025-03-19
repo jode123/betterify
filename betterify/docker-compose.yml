@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  # Piped Backend
+  piped-backend:
+    image: 1337kavin/piped:latest
+    container_name: piped-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000
+      - PROXY_PART=http://localhost:8081
+      - FRONTEND_URL=http://localhost:3000
+      - API_URL=http://localhost:8080
+    networks:
+      - piped-network
+
+  # Piped Proxy
+  piped-proxy:
+    image: 1337kavin/piped-proxy:latest
+    container_name: piped-proxy
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+    networks:
+      - piped-network
+
+networks:
+  piped-network:
+    driver: bridge
+
