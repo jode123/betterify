@@ -2,17 +2,16 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize2, Minimize2, Heart } from "lucide-react"
-import { Slider } from "../components/ui/slider"
-import { Button } from "../components/ui/button"
+import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { useTheme } from "next-themes"
-import { useIsMobile } from "../hooks/use-mobile"
-import { cn } from "../lib/utils"
-import { getStreamUrl } from "../lib/piped"
-import { toggleLikeSong, isLikedSong } from "../lib/playlist-manager"
-import { useToast } from "../hooks/use-toast"
-import { searchTrackOnPiped, getProxiedStreamUrl } from "../lib/piped"
-import { usePlayer } from "../contexts/PlayerContext"
+import { useTheme } from "@/lib/theme-context"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
+import { getStreamUrl } from "@/lib/piped"
+import { toggleLikeSong, isLikedSong } from "@/lib/playlist-manager"
+import { useToast } from "@/hooks/use-toast"
+import { searchTrackOnPiped, ensureProperStreamUrl } from "@/lib/piped"
 
 interface PlayerState {
   isPlaying: boolean
@@ -44,31 +43,26 @@ interface PlayerState {
   }>
 }
 
-const Player = () => {
-  // Define initial state
-  const initialState: PlayerState = {
+export function Player() {
+  const [playerState, setPlayerState] = useState<PlayerState>({
     isPlaying: false,
     currentTrack: null,
     volume: 80,
-    isMuted: false,
     currentTime: 0,
     isFullscreen: false,
+    isMuted: false,
     queue: [],
     history: [],
-  }
-
-  // Use state for player
-  const [playerState, setPlayerState] = useState<PlayerState>(initialState)
+  })
 
   const [isSearching, setIsSearching] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const playerRef = useRef<HTMLDivElement>(null)
-  const { theme } = useTheme()
+  const { isDarkMode, themeColor } = useTheme()
   const isMobile = useIsMobile()
   const { toast } = useToast()
-  const { isDarkMode } = usePlayer()
 
   // Format time in MM:SS
   const formatTime = (seconds: number) => {
@@ -85,15 +79,8 @@ const Player = () => {
       audioRef.current?.pause()
       videoRef.current?.pause()
     } else {
-      audioRef.current?.play().catch((error) => {
-        console.error("Playback error:", error)
-        toast({
-          title: "Playback Error",
-          description: "There was an error playing this track. Please try another one.",
-          variant: "destructive",
-        })
-      })
-      videoRef.current?.play().catch((e) => console.error("Video playback error:", e))
+      audioRef.current?.play()
+      videoRef.current?.play()
     }
 
     setPlayerState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }))
@@ -149,9 +136,9 @@ const Player = () => {
     if (!playerState.currentTrack) return
 
     if (playerState.isFullscreen) {
-      document.exitFullscreen().catch((e) => console.error("Exit fullscreen error:", e))
+      document.exitFullscreen()
     } else if (playerRef.current) {
-      playerRef.current.requestFullscreen().catch((e) => console.error("Request fullscreen error:", e))
+      playerRef.current.requestFullscreen()
     }
   }
 
@@ -162,7 +149,7 @@ const Player = () => {
     const { title, artist, thumbnailUrl, videoId, duration } = playerState.currentTrack
 
     const song = {
-      id: videoId || `song_${Date.now()}`,
+      id: `song_${Date.now()}`,
       title,
       artist,
       thumbnailUrl,
@@ -273,13 +260,9 @@ const Player = () => {
         throw new Error("Failed to get stream data")
       }
 
-      // Ensure audio and video URLs are proxied through Piped
-      const audioUrl = streamData.audioUrl ? getProxiedStreamUrl(streamData.audioUrl) : undefined
-      const videoUrl = streamData.videoUrl ? getProxiedStreamUrl(streamData.videoUrl) : undefined
-
-      if (!audioUrl) {
-        throw new Error("No audio stream available")
-      }
+      // Ensure audio and video URLs are properly formatted
+      const audioUrl = ensureProperStreamUrl(streamData.audioUrl)
+      const videoUrl = streamData.videoUrl ? ensureProperStreamUrl(streamData.videoUrl) : undefined
 
       // Set the current track
       setPlayerState((prev) => ({
@@ -288,11 +271,11 @@ const Player = () => {
           title: track,
           artist: artist,
           album: album,
-          thumbnailUrl: streamData.thumbnailUrl || "/placeholder.svg?height=300&width=300",
+          thumbnailUrl: streamData.thumbnailUrl,
           audioUrl: audioUrl,
           videoUrl: videoUrl,
           videoId: videoId || streamData.videoId,
-          duration: streamData.duration || 0,
+          duration: streamData.duration,
         },
         isPlaying: true,
         currentTime: 0,
@@ -302,13 +285,12 @@ const Player = () => {
       setTimeout(() => {
         if (audioRef.current) {
           audioRef.current.play().catch((error) => {
-            console.error("Playback error:", error)
+            console.error("Error playing audio:", error)
             toast({
               title: "Playback Error",
-              description: "There was an error playing this track. Please try another one.",
+              description: "Failed to play audio. Please check your connection and try again.",
               variant: "destructive",
             })
-            setPlayerState((prev) => ({ ...prev, isPlaying: false }))
           })
         }
       }, 100)
@@ -319,7 +301,6 @@ const Player = () => {
         description: "Failed to play this track. Please try another one.",
         variant: "destructive",
       })
-      setPlayerState((prev) => ({ ...prev, isPlaying: false }))
     } finally {
       setIsSearching(false)
       setIsLoading(false)
@@ -346,30 +327,14 @@ const Player = () => {
       }
     }
 
-    const handleError = (e: Event) => {
-      console.error("Audio playback error:", e)
-      toast({
-        title: "Playback Error",
-        description: "There was an error playing this track. Please try another one.",
-        variant: "destructive",
-      })
-      setPlayerState((prev) => ({ ...prev, isPlaying: false }))
-    }
-
-    if (audioRef.current) {
-      audioRef.current.addEventListener("timeupdate", handleTimeUpdate)
-      audioRef.current.addEventListener("ended", handleEnded)
-      audioRef.current.addEventListener("error", handleError)
-    }
+    audioRef.current?.addEventListener("timeupdate", handleTimeUpdate)
+    audioRef.current?.addEventListener("ended", handleEnded)
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.removeEventListener("timeupdate", handleTimeUpdate)
-        audioRef.current.removeEventListener("ended", handleEnded)
-        audioRef.current.removeEventListener("error", handleError)
-      }
+      audioRef.current?.removeEventListener("timeupdate", handleTimeUpdate)
+      audioRef.current?.removeEventListener("ended", handleEnded)
     }
-  }, [playerState.queue, toast])
+  }, [playerState.queue])
 
   // Listen for fullscreenchange events
   useEffect(() => {
@@ -403,7 +368,7 @@ const Player = () => {
 
       if (!videoId) return
 
-      playTrack(uploader || "Unknown Artist", title || "Unknown Track", undefined, videoId)
+      playTrack(uploader, title, undefined, videoId)
     }
 
     // Listen for add-to-queue custom events
@@ -436,7 +401,7 @@ const Player = () => {
 
   // Get theme-based styles
   const getThemeStyles = () => {
-    if (theme === "dark") {
+    if (isDarkMode) {
       return {
         bg: "bg-neutral-800",
         text: "text-white",
@@ -458,7 +423,8 @@ const Player = () => {
       ref={playerRef}
       className={cn(
         "h-20 border-t flex items-center px-4 transition-colors",
-        isDarkMode ? "bg-neutral-800 border-neutral-700" : "bg-neutral-100 border-neutral-200",
+        themeStyles.bg,
+        themeStyles.border,
         playerState.isFullscreen && "h-screen flex-col justify-center items-center p-8",
       )}
     >
@@ -484,7 +450,12 @@ const Player = () => {
       >
         {playerState.currentTrack ? (
           <div className="flex items-center">
-            <div className={cn("w-12 h-12 mr-4 relative flex-shrink-0", playerState.isFullscreen && "w-16 h-16")}>
+            <div
+              className={cn(
+                "w-12 h-12 mr-4 relative flex-shrink-0 rounded overflow-hidden theme-glow-hover",
+                playerState.isFullscreen && "w-16 h-16",
+              )}
+            >
               <Image
                 src={playerState.currentTrack.thumbnailUrl || "/placeholder.svg?height=50&width=50"}
                 alt="Album cover"
@@ -498,7 +469,12 @@ const Player = () => {
                 {playerState.currentTrack.artist}
               </div>
             </div>
-            <Button size="icon" variant="ghost" className="ml-2 h-8 w-8" onClick={handleLikeCurrentTrack}>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="ml-2 h-8 w-8 theme-glow-hover"
+              onClick={handleLikeCurrentTrack}
+            >
               <Heart
                 size={16}
                 className={isLikedSong(playerState.currentTrack.videoId) ? "fill-red-500 text-red-500" : ""}
@@ -507,7 +483,7 @@ const Player = () => {
           </div>
         ) : (
           <div className="flex items-center">
-            <div className="w-12 h-12 mr-4 bg-neutral-200 dark:bg-neutral-700 flex-shrink-0" />
+            <div className="w-12 h-12 mr-4 bg-neutral-200 dark:bg-neutral-700 flex-shrink-0 rounded" />
             <div>
               <div className={cn("font-semibold", themeStyles.text)}>
                 {isSearching ? "Searching..." : "Not Playing"}
@@ -529,7 +505,10 @@ const Player = () => {
       >
         <div className="flex items-center space-x-4">
           <button
-            className={cn("text-gray-700 hover:text-black", themeStyles.text)}
+            className={cn(
+              "text-gray-700 hover:text-black theme-text theme-glow-hover rounded-full p-1",
+              themeStyles.text,
+            )}
             onClick={skipToPrevious}
             disabled={playerState.history.length === 0 && playerState.currentTime <= 3}
           >
@@ -537,16 +516,20 @@ const Player = () => {
           </button>
           <button
             className={cn(
-              "bg-black text-white dark:bg-white dark:text-black rounded-full p-2 hover:bg-gray-800 dark:hover:bg-gray-200",
+              "theme-bg text-white rounded-full p-2 hover:bg-gray-800 dark:hover:bg-gray-200 theme-glow-hover",
               isLoading && "opacity-50 cursor-not-allowed",
             )}
             onClick={togglePlayback}
             disabled={isLoading || !playerState.currentTrack}
+            style={{ backgroundColor: "var(--theme-primary)" }}
           >
             {playerState.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
           </button>
           <button
-            className={cn("text-gray-700 hover:text-black", themeStyles.text)}
+            className={cn(
+              "text-gray-700 hover:text-black theme-text theme-glow-hover rounded-full p-1",
+              themeStyles.text,
+            )}
             onClick={skipToNext}
             disabled={playerState.queue.length === 0}
           >
@@ -579,7 +562,10 @@ const Player = () => {
           )}
         >
           <div className="flex items-center">
-            <button className={cn("text-gray-700 mr-2", themeStyles.text)} onClick={toggleMute}>
+            <button
+              className={cn("text-gray-700 mr-2 theme-text theme-glow-hover rounded-full p-1", themeStyles.text)}
+              onClick={toggleMute}
+            >
               {playerState.isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
             </button>
             <Slider
@@ -593,7 +579,7 @@ const Player = () => {
           </div>
 
           {playerState.currentTrack && (
-            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="ml-4">
+            <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="ml-4 theme-glow-hover">
               {playerState.isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </Button>
           )}
@@ -601,19 +587,20 @@ const Player = () => {
       )}
 
       {/* Hidden audio element */}
-      {playerState.currentTrack?.audioUrl && (
-        <audio
-          ref={audioRef}
-          src={playerState.currentTrack.audioUrl}
-          className="hidden"
-          preload="auto"
-          onError={(e) => console.error("Audio error:", e)}
-        />
-      )}
+      <audio
+        ref={audioRef}
+        src={playerState.currentTrack?.audioUrl}
+        className="hidden"
+        onError={(e) => {
+          console.error("Audio error:", e)
+          toast({
+            title: "Playback Error",
+            description: "There was an error playing this track. Please try another one.",
+            variant: "destructive",
+          })
+        }}
+      />
     </div>
   )
 }
-
-export { Player }
-export default Player
 

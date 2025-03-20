@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Card, CardContent } from "../components/ui/card"
-import { Button } from "../components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Settings, Music, User } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { getProxiedImageUrl } from "../lib/utils"
 
 interface PlaylistImage {
   url: string
@@ -240,13 +239,11 @@ export function MainContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {topArtists.map((artist) => (
             <Link href={`/lastfm/artist/${encodeURIComponent(artist.name)}`} key={artist.name}>
-              <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow">
+              <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
                 <CardContent className="p-0">
                   <div className="aspect-square relative">
                     <Image
-                      src={getProxiedImageUrl(
-                        artist.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder,
-                      )}
+                      src={artist.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
                       alt={artist.name}
                       fill
                       className="object-cover"
@@ -277,13 +274,11 @@ export function MainContent() {
               href={`/lastfm/album/${encodeURIComponent(track.artist.name)}/${encodeURIComponent(track.name)}`}
               key={track.name}
             >
-              <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow">
+              <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
                 <CardContent className="p-0">
                   <div className="aspect-square relative">
                     <Image
-                      src={getProxiedImageUrl(
-                        track.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder,
-                      )}
+                      src={track.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
                       alt={track.name}
                       fill
                       className="object-cover"
@@ -307,7 +302,7 @@ export function MainContent() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {playlists.map((playlist) => (
               <Link href={`/playlist/${playlist.id}`} key={playlist.id}>
-                <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow">
+                <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
                   <CardContent className="p-0">
                     <Image
                       src={playlist.images?.[0]?.url || placeholder}
@@ -339,7 +334,7 @@ export function MainContent() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {recentlyPlayed.map((item) => (
               <Link href={`/album/${item.track.album.id}`} key={item.track.id + item.played_at}>
-                <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow">
+                <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
                   <CardContent className="p-0">
                     <Image
                       src={item.track.album.images[0]?.url || placeholder}

@@ -64,7 +64,7 @@ export function MainContent() {
   useEffect(() => {
     const accessToken = localStorage.getItem("spotify_access_token")
     const tokenExpiry = localStorage.getItem("spotify_token_expiry")
-
+    
     if (accessToken && tokenExpiry && Number(tokenExpiry) > Date.now()) {
       setIsAuthenticated(true)
     }
@@ -106,17 +106,17 @@ export function MainContent() {
   useEffect(() => {
     const fetchRecentlyPlayed = async () => {
       const accessToken = localStorage.getItem("spotify_access_token")
-
+      
       if (!accessToken) return
-
+      
       try {
         setIsLoadingRecent(true)
         const response = await fetch(`/api/spotify/recently-played?access_token=${accessToken}`)
-
+        
         if (!response.ok) {
           throw new Error("Failed to fetch recently played")
         }
-
+        
         const data = await response.json()
         setRecentlyPlayed(data.items || [])
       } catch (error) {
@@ -125,7 +125,7 @@ export function MainContent() {
         setIsLoadingRecent(false)
       }
     }
-
+    
     if (isAuthenticated) {
       fetchRecentlyPlayed()
     }
@@ -136,7 +136,7 @@ export function MainContent() {
     const fetchLastFmData = async () => {
       try {
         setIsLoadingLastFm(true)
-
+        
         // Fetch top artists
         const artistsResponse = await fetch("/api/lastfm/top-artists?limit=8")
         if (!artistsResponse.ok) {
@@ -144,7 +144,7 @@ export function MainContent() {
         }
         const artistsData = await artistsResponse.json()
         setTopArtists(artistsData)
-
+        
         // Fetch top tracks
         const tracksResponse = await fetch("/api/lastfm/top-tracks?limit=8")
         if (!tracksResponse.ok) {
@@ -158,7 +158,7 @@ export function MainContent() {
         setIsLoadingLastFm(false)
       }
     }
-
+    
     fetchLastFmData()
   }, [])
 
@@ -170,7 +170,9 @@ export function MainContent() {
     return (
       <div className="flex-1 p-8 flex flex-col items-center justify-center">
         <div className="text-center mb-6">
-          <h3 className="text-xl font-semibold mb-2">Spotify API Credentials Required</h3>
+          <h3 className="text-xl font-semibold mb-2">
+            Spotify API Credentials Required
+          </h3>
           <p className="text-neutral-500 dark:text-neutral-400 max-w-md">
             To use this app, you need to add your Spotify API credentials in the settings.
           </p>
@@ -210,14 +212,11 @@ export function MainContent() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {topArtists.map((artist) => (
-            <Card
-              key={artist.name}
-              className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700"
-            >
+            <Card key={artist.name} className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
               <CardContent className="p-0">
                 <div className="aspect-square relative">
                   <Image
-                    src={artist.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
+                    src={artist.image.find(img => img.size === "extralarge")?.["#text"] || placeholder}
                     alt={artist.name}
                     fill
                     className="object-cover"
@@ -243,14 +242,11 @@ export function MainContent() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {topTracks.map((track) => (
-            <Card
-              key={track.name}
-              className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700"
-            >
+            <Card key={track.name} className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
               <CardContent className="p-0">
                 <div className="aspect-square relative">
-                  <Image
-                    src={track.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
+                  <Image\
+                    src={track.image.find(img => img.size === "extralarge\")?.\"#text\" || placeholder}
                     alt={track.name}
                     fill
                     className="object-cover"
@@ -258,7 +254,9 @@ export function MainContent() {
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold truncate">{track.name}</h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 truncate">{track.artist.name}</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 truncate">
+                    {track.artist.name}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -284,9 +282,7 @@ export function MainContent() {
                   <div className="p-4">
                     <h3 className="font-semibold truncate">{playlist.name}</h3>
                     {playlist.description && (
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 truncate">
-                        {playlist.description}
-                      </p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1 truncate">{playlist.description}</p>
                     )}
                   </div>
                 </CardContent>

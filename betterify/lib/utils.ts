@@ -5,16 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Modified to return the original URL for Last.fm images
-export function getProxiedImageUrl(url: string | undefined): string {
-  if (!url) return "/placeholder.svg?height=300&width=300"
+export function getProxiedImageUrl(imageUrl: string): string {
+  if (!imageUrl) return imageUrl
 
-  // Return the original URL directly for Last.fm images
-  if (url.includes("lastfm.freetls.fastly.net") || url.includes("last.fm")) {
-    return url
-  }
+  // If the URL is already proxied, return it
+  if (imageUrl.startsWith("/api/proxy/image")) return imageUrl
 
-  // For other sources, use the proxy if needed
-  return url
+  // Construct the proxied URL
+  return `/api/proxy/image?url=${encodeURIComponent(imageUrl)}`
 }
 

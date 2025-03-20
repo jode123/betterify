@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
-// Local Piped instance running in Docker
-const PIPED_API_URL = process.env.PIPED_API_URL || "http://localhost:8080"
+// Use the public Piped API
+const PIPED_API_URL = "https://pipedapi.kavin.rocks"
 
 export async function GET(request: Request) {
   const url = new URL(request.url)

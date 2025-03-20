@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getProxiedImageUrl } from "@/lib/utils"
 
 interface LastFmArtistInfo {
   name: string
@@ -151,12 +150,7 @@ export function LastFmArtistDetail({ name }: { name: string }) {
       <div className="bg-gradient-to-b from-neutral-200 to-transparent dark:from-neutral-800 p-8">
         <div className="flex flex-col md:flex-row md:items-start md:space-x-6 mb-8">
           <div className="w-32 h-32 md:w-48 md:h-48 relative shadow-lg rounded-full overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0">
-            <Image
-              src={getProxiedImageUrl(artistImage) || "/placeholder.svg"}
-              alt={artistInfo.name}
-              fill
-              className="object-cover"
-            />
+            <Image src={artistImage || "/placeholder.svg"} alt={artistInfo.name} fill className="object-cover" />
           </div>
           <div className="flex flex-col justify-end text-center md:text-left">
             <p className="text-sm uppercase font-medium mb-2">Artist</p>
@@ -195,7 +189,7 @@ export function LastFmArtistDetail({ name }: { name: string }) {
 
         <div className="flex justify-center md:justify-start">
           <Button
-            className="rounded-full px-8 bg-neutral-800 dark:bg-white text-white dark:text-neutral-800 hover:bg-neutral-700 dark:hover:bg-neutral-200"
+            className="rounded-full px-8 theme-bg text-white hover:bg-neutral-700 dark:hover:bg-neutral-200 theme-glow-hover"
             onClick={() => {
               if (topTracks.length > 0) {
                 // Play the first track
@@ -248,7 +242,7 @@ export function LastFmArtistDetail({ name }: { name: string }) {
                   {topTracks.map((track, index) => (
                     <tr
                       key={track.name}
-                      className="hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer"
+                      className="hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer theme-glow-hover"
                       onClick={() => {
                         window.dispatchEvent(
                           new CustomEvent("play-track", {
@@ -262,9 +256,7 @@ export function LastFmArtistDetail({ name }: { name: string }) {
                         <div className="flex items-center">
                           <div className="w-10 h-10 relative mr-3 flex-shrink-0">
                             <Image
-                              src={getProxiedImageUrl(
-                                track.image.find((img) => img.size === "medium")?.["#text"] || placeholder,
-                              )}
+                              src={track.image.find((img) => img.size === "medium")?.["#text"] || placeholder}
                               alt={track.name}
                               fill
                               className="object-cover"
@@ -290,13 +282,11 @@ export function LastFmArtistDetail({ name }: { name: string }) {
                   href={`/lastfm/album/${encodeURIComponent(album.artist.name)}/${encodeURIComponent(album.name)}`}
                   key={album.name}
                 >
-                  <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow">
+                  <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
                     <CardContent className="p-0">
                       <div className="aspect-square relative">
                         <Image
-                          src={getProxiedImageUrl(
-                            album.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder,
-                          )}
+                          src={album.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
                           alt={album.name}
                           fill
                           className="object-cover"
@@ -319,13 +309,11 @@ export function LastFmArtistDetail({ name }: { name: string }) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {artistInfo.similar?.artist.map((artist) => (
                 <Link href={`/lastfm/artist/${encodeURIComponent(artist.name)}`} key={artist.name}>
-                  <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow">
+                  <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
                     <CardContent className="p-0">
                       <div className="aspect-square relative">
                         <Image
-                          src={getProxiedImageUrl(
-                            artist.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder,
-                          )}
+                          src={artist.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
                           alt={artist.name}
                           fill
                           className="object-cover"
