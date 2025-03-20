@@ -3,12 +3,12 @@
 import { Home, Search, Library, PlusCircle, Settings, Menu, X } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { cn } from "../lib/utils"
+import { ScrollArea } from "../components/ui/scroll-area"
+import { ThemeToggle } from "../components/theme-toggle"
 import { useEffect, useState } from "react"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { Button } from "@/components/ui/button"
+import { useIsMobile } from "../hooks/use-mobile"
+import { Button } from "../components/ui/button"
 
 export function Sidebar() {
   const pathname = usePathname()

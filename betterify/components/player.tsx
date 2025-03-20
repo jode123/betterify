@@ -2,17 +2,17 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize2, Minimize2, Heart } from "lucide-react"
-import { Slider } from "@/components/ui/slider"
-import { Button } from "@/components/ui/button"
+import { Slider } from "../components/ui/slider"
+import { Button } from "../components/ui/button"
 import Image from "next/image"
 import { useTheme } from "next-themes"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { cn } from "@/lib/utils"
-import { getStreamUrl } from "@/lib/piped"
-import { toggleLikeSong, isLikedSong } from "@/lib/playlist-manager"
-import { useToast } from "@/hooks/use-toast"
-import { searchTrackOnPiped, getProxiedStreamUrl } from "@/lib/piped"
-import { usePlayer } from "@/contexts/PlayerContext"
+import { useIsMobile } from "../hooks/use-mobile"
+import { cn } from "../lib/utils"
+import { getStreamUrl } from "../lib/piped"
+import { toggleLikeSong, isLikedSong } from "../lib/playlist-manager"
+import { useToast } from "../hooks/use-toast"
+import { searchTrackOnPiped, getProxiedStreamUrl } from "../lib/piped"
+import { usePlayer } from "../contexts/PlayerContext"
 
 interface PlayerState {
   isPlaying: boolean

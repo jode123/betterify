@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "../components/ui/card"
+import { Button } from "../components/ui/button"
 import { Settings, Music, User } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { getProxiedImageUrl } from "@/lib/utils"
+import { getProxiedImageUrl } from "../lib/utils"
 
 interface PlaylistImage {
   url: string
