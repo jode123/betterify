@@ -264,12 +264,12 @@ export async function getUserPlaylists(accessToken: string) {
 
 export function getSpotifyAuthUrl() {
   const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || HARDCODED_CLIENT_ID
-  const redirectUri = 'https://betterify.vercel.app/api/spotify/callback'
-  const scope = 'user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private'
+  const redirectUri = "https://betterify.vercel.app/api/spotify/callback"
+  const scope = "user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private"
 
   const params = new URLSearchParams({
     client_id: clientId,
-    response_type: 'code',
+    response_type: "code",
     redirect_uri: redirectUri,
     scope: scope,
   })

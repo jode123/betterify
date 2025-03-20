@@ -1,7 +1,7 @@
 import { Sidebar } from "@/components/sidebar"
 import Player from "@/components/player"
 import { SearchContent } from "@/components/search-content"
-import { Suspense } from 'react'
+import { Suspense } from "react"
 
 export default function SearchPage() {
   return (

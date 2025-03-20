@@ -1,11 +1,11 @@
-// Local Piped instance running in Docker
-const PIPED_API_URL = process.env.NEXT_PUBLIC_PIPED_API_URL || "http://localhost:8080"
-const PIPED_PROXY_URL = process.env.NEXT_PUBLIC_PIPED_PROXY_URL || "http://localhost:8081"
+// Local Piped instance running in Docker or public instance
+const PIPED_API_URL = process.env.NEXT_PUBLIC_PIPED_API_URL || "https://pipedapi.kavin.rocks"
+const PIPED_PROXY_URL = process.env.NEXT_PUBLIC_PIPED_PROXY_URL || "https://pipedproxy.kavin.rocks"
 
 export async function searchPiped(query: string, filter = "music") {
   try {
     // Use environment variable for API URL
-    const apiUrl = process.env.NEXT_PUBLIC_PIPED_API_URL || 'https://pipedapi.kavin.rocks'
+    const apiUrl = PIPED_API_URL
     const response = await fetch(`${apiUrl}/search?q=${encodeURIComponent(query)}&filter=${filter}`)
 
     if (!response.ok) {
@@ -22,16 +22,35 @@ export async function searchPiped(query: string, filter = "music") {
 
 export async function getStreamUrl(videoId: string) {
   try {
-    // Use environment variable for proxy URL
-    const proxyUrl = process.env.NEXT_PUBLIC_PIPED_PROXY_URL || 'https://pipedproxy.kavin.rocks'
-    const response = await fetch(`${proxyUrl}/streams/${videoId}`)
+    // Use environment variable for API URL
+    const apiUrl = PIPED_API_URL
+    const response = await fetch(`${apiUrl}/streams/${videoId}`)
 
     if (!response.ok) {
       throw new Error(`Failed to get stream URL: ${response.status}`)
     }
 
     const data = await response.json()
-    return data.audioStreams?.[0]?.url || null
+
+    // Find audio stream with highest quality
+    const audioStreams = data.audioStreams || []
+    const bestAudio = audioStreams.sort((a: any, b: any) => Number.parseInt(b.bitrate) - Number.parseInt(a.bitrate))[0]
+
+    // Find video stream with medium quality (for performance)
+    const videoStreams = data.videoStreams || []
+    const mediumVideo =
+      videoStreams.find((s: any) => s.quality === "720p") ||
+      videoStreams.find((s: any) => s.quality === "480p") ||
+      videoStreams[0]
+
+    return {
+      audioUrl: bestAudio?.url,
+      videoUrl: mediumVideo?.url,
+      thumbnailUrl: data.thumbnailUrl,
+      uploader: data.uploader,
+      duration: data.duration,
+      videoId: videoId,
+    }
   } catch (error) {
     console.error("Error getting stream URL:", error)
     return null

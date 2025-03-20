@@ -1,6 +1,7 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect } from 'react'
+import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 
 interface Track {
   id: string
@@ -22,8 +23,21 @@ interface PlayerContextType {
   toggleDarkMode: () => void
 }
 
-// Create context with initial undefined value
-const PlayerContext = createContext<PlayerContextType | undefined>(undefined)
+// Create context with initial values
+const initialState: PlayerContextType = {
+  isPlaying: false,
+  track: null,
+  volume: 1,
+  isMuted: false,
+  isDarkMode: false,
+  setTrack: () => {},
+  togglePlay: () => {},
+  setVolume: () => {},
+  toggleMute: () => {},
+  toggleDarkMode: () => {},
+}
+
+const PlayerContext = createContext<PlayerContextType>(initialState)
 
 // Export the provider component
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
@@ -33,20 +47,24 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [isMuted, setIsMuted] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
 
-  const togglePlay = () => setIsPlaying(prev => !prev)
-  const toggleMute = () => setIsMuted(prev => !prev)
-  const toggleDarkMode = () => setIsDarkMode(prev => !prev)
+  const togglePlay = () => setIsPlaying((prev) => !prev)
+  const toggleMute = () => setIsMuted((prev) => !prev)
+  const toggleDarkMode = () => setIsDarkMode((prev) => !prev)
 
   // Effect to persist dark mode preference
   useEffect(() => {
-    const savedMode = localStorage.getItem('darkMode')
-    if (savedMode) {
-      setIsDarkMode(savedMode === 'true')
+    if (typeof window !== "undefined") {
+      const savedMode = localStorage.getItem("darkMode")
+      if (savedMode) {
+        setIsDarkMode(savedMode === "true")
+      }
     }
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('darkMode', isDarkMode.toString())
+    if (typeof window !== "undefined") {
+      localStorage.setItem("darkMode", isDarkMode.toString())
+    }
   }, [isDarkMode])
 
   const value = {
@@ -59,24 +77,21 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     togglePlay,
     setVolume,
     toggleMute,
-    toggleDarkMode
+    toggleDarkMode,
   }
 
-  return (
-    <PlayerContext.Provider value={value}>
-      {children}
-    </PlayerContext.Provider>
-  )
+  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>
 }
 
 // Export the hook
 export function usePlayer(): PlayerContextType {
   const context = useContext(PlayerContext)
   if (context === undefined) {
-    throw new Error('usePlayer must be used within a PlayerProvider')
+    throw new Error("usePlayer must be used within a PlayerProvider")
   }
   return context
 }
 
 // Export the context for direct usage if needed
 export { PlayerContext }
+

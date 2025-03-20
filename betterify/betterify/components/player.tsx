@@ -12,7 +12,7 @@ import { getStreamUrl } from "@/lib/piped"
 import { toggleLikeSong, isLikedSong } from "@/lib/playlist-manager"
 import { useToast } from "@/hooks/use-toast"
 import { searchTrackOnPiped, getProxiedStreamUrl } from "@/lib/piped"
-import { usePlayer } from '@/contexts/PlayerContext'
+import { usePlayer } from "@/contexts/PlayerContext"
 
 interface PlayerState {
   isPlaying: boolean
@@ -49,21 +49,16 @@ const Player = () => {
   const initialState: PlayerState = {
     isPlaying: false,
     currentTrack: null,
-    volume: 1,
+    volume: 80,
     isMuted: false,
     currentTime: 0,
     isFullscreen: false,
     queue: [],
-    history: []
+    history: [],
   }
 
-  // Use stable initial state
-  const [playerState, setPlayerState] = useState(initialState)
-
-  // Add useEffect for client-side updates
-  useEffect(() => {
-    // Client-side updates can happen here
-  }, [])
+  // Use state for player
+  const [playerState, setPlayerState] = useState<PlayerState>(initialState)
 
   const [isSearching, setIsSearching] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -90,8 +85,15 @@ const Player = () => {
       audioRef.current?.pause()
       videoRef.current?.pause()
     } else {
-      audioRef.current?.play()
-      videoRef.current?.play()
+      audioRef.current?.play().catch((error) => {
+        console.error("Playback error:", error)
+        toast({
+          title: "Playback Error",
+          description: "There was an error playing this track. Please try another one.",
+          variant: "destructive",
+        })
+      })
+      videoRef.current?.play().catch((e) => console.error("Video playback error:", e))
     }
 
     setPlayerState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }))
@@ -147,9 +149,9 @@ const Player = () => {
     if (!playerState.currentTrack) return
 
     if (playerState.isFullscreen) {
-      document.exitFullscreen()
+      document.exitFullscreen().catch((e) => console.error("Exit fullscreen error:", e))
     } else if (playerRef.current) {
-      playerRef.current.requestFullscreen()
+      playerRef.current.requestFullscreen().catch((e) => console.error("Request fullscreen error:", e))
     }
   }
 
@@ -160,7 +162,7 @@ const Player = () => {
     const { title, artist, thumbnailUrl, videoId, duration } = playerState.currentTrack
 
     const song = {
-      id: `song_${Date.now()}`,
+      id: videoId || `song_${Date.now()}`,
       title,
       artist,
       thumbnailUrl,
@@ -272,8 +274,12 @@ const Player = () => {
       }
 
       // Ensure audio and video URLs are proxied through Piped
-      const audioUrl = getProxiedStreamUrl(streamData.audioUrl)
+      const audioUrl = streamData.audioUrl ? getProxiedStreamUrl(streamData.audioUrl) : undefined
       const videoUrl = streamData.videoUrl ? getProxiedStreamUrl(streamData.videoUrl) : undefined
+
+      if (!audioUrl) {
+        throw new Error("No audio stream available")
+      }
 
       // Set the current track
       setPlayerState((prev) => ({
@@ -282,11 +288,11 @@ const Player = () => {
           title: track,
           artist: artist,
           album: album,
-          thumbnailUrl: streamData.thumbnailUrl,
+          thumbnailUrl: streamData.thumbnailUrl || "/placeholder.svg?height=300&width=300",
           audioUrl: audioUrl,
           videoUrl: videoUrl,
           videoId: videoId || streamData.videoId,
-          duration: streamData.duration,
+          duration: streamData.duration || 0,
         },
         isPlaying: true,
         currentTime: 0,
@@ -295,7 +301,15 @@ const Player = () => {
       // Play the track
       setTimeout(() => {
         if (audioRef.current) {
-          audioRef.current.play()
+          audioRef.current.play().catch((error) => {
+            console.error("Playback error:", error)
+            toast({
+              title: "Playback Error",
+              description: "There was an error playing this track. Please try another one.",
+              variant: "destructive",
+            })
+            setPlayerState((prev) => ({ ...prev, isPlaying: false }))
+          })
         }
       }, 100)
     } catch (error) {
@@ -305,6 +319,7 @@ const Player = () => {
         description: "Failed to play this track. Please try another one.",
         variant: "destructive",
       })
+      setPlayerState((prev) => ({ ...prev, isPlaying: false }))
     } finally {
       setIsSearching(false)
       setIsLoading(false)
@@ -331,14 +346,30 @@ const Player = () => {
       }
     }
 
-    audioRef.current?.addEventListener("timeupdate", handleTimeUpdate)
-    audioRef.current?.addEventListener("ended", handleEnded)
+    const handleError = (e: Event) => {
+      console.error("Audio playback error:", e)
+      toast({
+        title: "Playback Error",
+        description: "There was an error playing this track. Please try another one.",
+        variant: "destructive",
+      })
+      setPlayerState((prev) => ({ ...prev, isPlaying: false }))
+    }
+
+    if (audioRef.current) {
+      audioRef.current.addEventListener("timeupdate", handleTimeUpdate)
+      audioRef.current.addEventListener("ended", handleEnded)
+      audioRef.current.addEventListener("error", handleError)
+    }
 
     return () => {
-      audioRef.current?.removeEventListener("timeupdate", handleTimeUpdate)
-      audioRef.current?.removeEventListener("ended", handleEnded)
+      if (audioRef.current) {
+        audioRef.current.removeEventListener("timeupdate", handleTimeUpdate)
+        audioRef.current.removeEventListener("ended", handleEnded)
+        audioRef.current.removeEventListener("error", handleError)
+      }
     }
-  }, [playerState.queue])
+  }, [playerState.queue, toast])
 
   // Listen for fullscreenchange events
   useEffect(() => {
@@ -372,7 +403,7 @@ const Player = () => {
 
       if (!videoId) return
 
-      playTrack(uploader, title, undefined, videoId)
+      playTrack(uploader || "Unknown Artist", title || "Unknown Track", undefined, videoId)
     }
 
     // Listen for add-to-queue custom events
@@ -401,7 +432,7 @@ const Player = () => {
       window.removeEventListener("play-piped", handlePlayPiped)
       window.removeEventListener("add-to-queue", handleAddToQueue)
     }
-  }, [])
+  }, [toast])
 
   // Get theme-based styles
   const getThemeStyles = () => {
@@ -427,7 +458,7 @@ const Player = () => {
       ref={playerRef}
       className={cn(
         "h-20 border-t flex items-center px-4 transition-colors",
-        isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-neutral-100 border-neutral-200',
+        isDarkMode ? "bg-neutral-800 border-neutral-700" : "bg-neutral-100 border-neutral-200",
         playerState.isFullscreen && "h-screen flex-col justify-center items-center p-8",
       )}
     >
@@ -570,10 +601,19 @@ const Player = () => {
       )}
 
       {/* Hidden audio element */}
-      <audio ref={audioRef} src={playerState.currentTrack?.audioUrl} className="hidden" />
+      {playerState.currentTrack?.audioUrl && (
+        <audio
+          ref={audioRef}
+          src={playerState.currentTrack.audioUrl}
+          className="hidden"
+          preload="auto"
+          onError={(e) => console.error("Audio error:", e)}
+        />
+      )}
     </div>
   )
 }
 
+export { Player }
 export default Player
 
