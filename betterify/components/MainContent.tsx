@@ -245,8 +245,8 @@ export function MainContent() {
             <Card key={track.name} className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
               <CardContent className="p-0">
                 <div className="aspect-square relative">
-                  <Image\
-                    src={track.image.find(img => img.size === "extralarge\")?.\"#text\" || placeholder}
+                  <Image
+                    src={track.image.find(img => img.size === "extralarge")?.["#text"] || placeholder}
                     alt={track.name}
                     fill
                     className="object-cover"

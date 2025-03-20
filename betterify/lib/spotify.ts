@@ -263,57 +263,16 @@ export async function getUserPlaylists(accessToken: string) {
 }
 
 export function getSpotifyAuthUrl() {
-  // Get client ID from environment or localStorage or hardcoded value
-  let clientId = process.env.SPOTIFY_CLIENT_ID || HARDCODED_CLIENT_ID
+  const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || HARDCODED_CLIENT_ID
+  const redirectUri = 'https://betterify.vercel.app/api/spotify/callback'
+  const scope = 'user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private'
 
-  if (typeof window !== "undefined") {
-    const storedClientId = localStorage.getItem("spotify_client_id")
-    if (storedClientId) {
-      clientId = storedClientId
-    }
-  }
-
-  if (!clientId) {
-    throw new Error("Missing Spotify Client ID")
-  }
-
-  // Generate a random state value for security
-  const state = Math.random().toString(36).substring(2, 15)
-
-  // Store state in localStorage to verify it when Spotify redirects back
-  if (typeof window !== "undefined") {
-    localStorage.setItem("spotify_auth_state", state)
-  }
-
-  // Define the redirect URI - must match what's registered in Spotify dashboard
-  const redirectUri = `${window.location.origin}/api/spotify/callback`
-
-  // Define the scopes (permissions) we need
-  const scopes = [
-    "playlist-read-private",
-    "playlist-read-collaborative",
-    "user-read-email",
-    "user-read-private",
-    "user-read-recently-played",
-    "user-top-read",
-  ].join(" ")
-
-  // Get client secret for passing to callback
-  const clientSecret = localStorage.getItem("spotify_client_secret") || HARDCODED_CLIENT_SECRET
-
-  // Construct the authorization URL with parameters
   const params = new URLSearchParams({
     client_id: clientId,
-    response_type: "code",
+    response_type: 'code',
     redirect_uri: redirectUri,
-    state: state,
-    scope: scopes,
-    stored_state: state, // Pass the state to the callback for verification
+    scope: scope,
   })
-
-  // Add client ID and secret as separate parameters
-  params.append("client_id", clientId)
-  params.append("client_secret", clientSecret)
 
   return `https://accounts.spotify.com/authorize?${params.toString()}`
 }

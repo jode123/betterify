@@ -1,64 +1,91 @@
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+
 export async function GET(request: Request) {
-  const url = new URL(request.url)
-  const code = url.searchParams.get("code")
-  const state = url.searchParams.get("state")
-  const error = url.searchParams.get("error")
-
-  // Handle errors from Spotify
+  const { searchParams } = new URL(request.url)
+  const code = searchParams.get('code')
+  const error = searchParams.get('error')
+  
   if (error) {
-    return Response.redirect(`${url.origin}/settings?error=${error}`)
+    return NextResponse.redirect(new URL(`/settings?error=${error}`, request.url))
   }
-
-  // If we don't have code or state, something went wrong
-  if (!code || !state) {
-    return Response.redirect(`${url.origin}/settings?error=missing_params`)
-  }
-
-  // Verify state matches what we stored (to prevent CSRF attacks)
-  const storedState = url.searchParams.get("stored_state")
-  if (storedState && state !== storedState) {
-    return Response.redirect(`${url.origin}/settings?error=state_mismatch`)
+  
+  if (!code) {
+    return NextResponse.redirect(new URL('/settings?error=no_code', request.url))
   }
 
   try {
-    // Get client ID and secret from query parameters (passed from the client)
-    const clientId = url.searchParams.get("client_id")
-    const clientSecret = url.searchParams.get("client_secret")
+    const clientId = process.env.SPOTIFY_CLIENT_ID
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET
+    const redirectUri = 'https://betterify.vercel.app/api/spotify/callback'
 
-    if (!clientId || !clientSecret) {
-      return Response.redirect(`${url.origin}/settings?error=missing_credentials`)
-    }
-
-    // Exchange the authorization code for an access token
-    const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
-      method: "POST",
+    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
       },
       body: new URLSearchParams({
-        grant_type: "authorization_code",
+        grant_type: 'authorization_code',
         code,
-        redirect_uri: `${url.origin}/api/spotify/callback`,
+        redirect_uri: redirectUri,
       }).toString(),
     })
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.json()
-      console.error("Token exchange error:", errorData)
-      return Response.redirect(`${url.origin}/settings?error=token_exchange_failed`)
+      const errorData = await tokenResponse.text()
+      console.error('Token exchange failed:', errorData)
+      return NextResponse.redirect(
+        new URL(`/settings?error=token_exchange_failed`, request.url)
+      )
     }
 
-    const tokenData = await tokenResponse.json()
+    const data = await tokenResponse.json()
 
-    // Redirect to the front-end with a temporary code
-    // We'll use this code to store the tokens in localStorage from the client-side
-    return Response.redirect(
-      `${url.origin}/settings?auth_success=true&access_token=${tokenData.access_token}&refresh_token=${tokenData.refresh_token}&expires_in=${tokenData.expires_in}`,
-    )
+    if (!data.access_token) {
+      console.error('No access token received')
+      return NextResponse.redirect(
+        new URL('/settings?error=no_access_token', request.url)
+      )
+    }
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax' as const,
+      path: '/',
+      maxAge: 3600 * 24 * 7 // 1 week
+    }
+
+    const cookieStore = await cookies()
+    
+    // Clear any existing cookies first
+    cookieStore.delete('spotify_access_token')
+    cookieStore.delete('spotify_refresh_token')
+    cookieStore.delete('spotify_token_expiry')
+
+    // Set new cookies
+    cookieStore.set('spotify_access_token', data.access_token, cookieOptions)
+    if (data.refresh_token) {
+      cookieStore.set('spotify_refresh_token', data.refresh_token, cookieOptions)
+    }
+    
+    const expiryTime = Date.now() + (data.expires_in * 1000)
+    cookieStore.set('spotify_token_expiry', expiryTime.toString(), cookieOptions)
+
+    // Log cookie status (for debugging)
+    console.log('Cookies set:', {
+      hasAccessToken: !!data.access_token,
+      hasRefreshToken: !!data.refresh_token,
+      expiryTime: new Date(expiryTime).toISOString()
+    })
+
+    return NextResponse.redirect(new URL('/settings?auth_success=true', request.url))
   } catch (error) {
-    console.error("Error in Spotify callback:", error)
-    return Response.redirect(`${url.origin}/settings?error=server_error`)
+    console.error('Callback error:', error)
+    return NextResponse.redirect(
+      new URL('/settings?error=server_error', request.url)
+    )
   }
 }
 

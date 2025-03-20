@@ -12,6 +12,7 @@ import { getStreamUrl } from "@/lib/piped"
 import { toggleLikeSong, isLikedSong } from "@/lib/playlist-manager"
 import { useToast } from "@/hooks/use-toast"
 import { searchTrackOnPiped, getProxiedStreamUrl } from "@/lib/piped"
+import { usePlayer } from '@/contexts/PlayerContext'
 
 interface PlayerState {
   isPlaying: boolean
@@ -43,17 +44,26 @@ interface PlayerState {
   }>
 }
 
-export function Player() {
-  const [playerState, setPlayerState] = useState<PlayerState>({
+const Player = () => {
+  // Define initial state
+  const initialState: PlayerState = {
     isPlaying: false,
     currentTrack: null,
-    volume: 80,
+    volume: 1,
+    isMuted: false,
     currentTime: 0,
     isFullscreen: false,
-    isMuted: false,
     queue: [],
-    history: [],
-  })
+    history: []
+  }
+
+  // Use stable initial state
+  const [playerState, setPlayerState] = useState(initialState)
+
+  // Add useEffect for client-side updates
+  useEffect(() => {
+    // Client-side updates can happen here
+  }, [])
 
   const [isSearching, setIsSearching] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -63,6 +73,7 @@ export function Player() {
   const { theme } = useTheme()
   const isMobile = useIsMobile()
   const { toast } = useToast()
+  const { isDarkMode } = usePlayer()
 
   // Format time in MM:SS
   const formatTime = (seconds: number) => {
@@ -416,8 +427,7 @@ export function Player() {
       ref={playerRef}
       className={cn(
         "h-20 border-t flex items-center px-4 transition-colors",
-        themeStyles.bg,
-        themeStyles.border,
+        isDarkMode ? 'bg-neutral-800 border-neutral-700' : 'bg-neutral-100 border-neutral-200',
         playerState.isFullscreen && "h-screen flex-col justify-center items-center p-8",
       )}
     >
@@ -564,4 +574,6 @@ export function Player() {
     </div>
   )
 }
+
+export default Player
 

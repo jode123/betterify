@@ -1,6 +1,6 @@
 import { Sidebar } from "@/components/sidebar"
 import { Player } from "@/components/player"
-import { SettingsContent } from "@/components/settings-content"
+import SettingsContent from "@/components/settings-content"
 
 export default function SettingsPage() {
   return (

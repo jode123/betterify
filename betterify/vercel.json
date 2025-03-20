@@ -1,0 +1,16 @@
+{
+  "env": {
+    "NEXT_PUBLIC_PIPED_API_URL": "https://pipedapi.kavin.rocks",
+    "NEXT_PUBLIC_PIPED_PROXY_URL": "https://pipedproxy.kavin.rocks"
+  },
+  "routes": [
+    {
+      "src": "/api/piped/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    }
+  ]
+}

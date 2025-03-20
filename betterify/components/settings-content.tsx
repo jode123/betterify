@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,12 +13,13 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { getSpotifyAuthUrl } from "@/lib/spotify"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlaylistManager } from "@/components/playlist-manager"
+import { isSpotifyAuthenticated } from '@/lib/auth'
 
 // Replace these with your actual Spotify API credentials
-const HARDCODED_CLIENT_ID = "YOUR_SPOTIFY_CLIENT_ID_HERE"
-const HARDCODED_CLIENT_SECRET = "YOUR_SPOTIFY_CLIENT_SECRET_HERE"
+const HARDCODED_CLIENT_ID = "f386c406d93949f5b0e886d55e70804e"
+const HARDCODED_CLIENT_SECRET = "0b15b2f8af744fdc89a354f2d4c333c3"
 
-export function SettingsContent() {
+const SettingsContent = () => {
   const [clientId, setClientId] = useState(HARDCODED_CLIENT_ID)
   const [clientSecret, setClientSecret] = useState(HARDCODED_CLIENT_SECRET)
   const [isSaving, setIsSaving] = useState(false)
@@ -26,6 +27,8 @@ export function SettingsContent() {
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
   const { theme, setTheme } = useTheme()
   const { toast } = useToast()
+  const [isConnectedToSpotify, setIsConnectedToSpotify] = useState(false)
+  const [spotifyUsername, setSpotifyUsername] = useState<string | null>(null)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -39,53 +42,107 @@ export function SettingsContent() {
 
   // Save tokens if we received them from the callback
   useEffect(() => {
-    if (authSuccess && accessToken && refreshToken && expiresIn) {
-      // Save the tokens
-      localStorage.setItem("spotify_access_token", accessToken)
-      localStorage.setItem("spotify_refresh_token", refreshToken)
-      localStorage.setItem("spotify_token_expiry", (Date.now() + Number(expiresIn) * 1000).toString())
+    const params = new URLSearchParams(window.location.search)
+    const authSuccess = params.get("auth_success") === "true"
+    const error = params.get("error")
 
-      // Clear the URL parameters
-      router.replace("/settings")
-
+    if (authSuccess) {
+      // Add delay to ensure cookies are set
+      setTimeout(() => {
+        fetchSpotifyUser()
+        router.replace('/settings')
+        
+        toast({
+          title: "Successfully Connected! 🎉",
+          description: "Your Spotify account is now linked.",
+          variant: "default",
+          duration: 5000,
+        })
+      }, 1000)
+    } else if (error) {
+      setIsConnectedToSpotify(false)
+      setSpotifyUsername(null)
+      
       toast({
-        title: "Connected to Spotify",
-        description: "Your Spotify account has been successfully connected.",
-      })
-
-      // Update the connection status
-      setIsConnectedToSpotify(true)
-    } else if (authError) {
-      toast({
-        title: "Authentication Error",
-        description: `Failed to connect to Spotify: ${authError}`,
+        title: "Authentication Failed",
+        description: `Could not connect to Spotify: ${error}`,
         variant: "destructive",
+        duration: 5000,
       })
     }
-  }, [authSuccess, accessToken, refreshToken, expiresIn, authError, router, toast])
+  }, [router, toast])
 
   // Add a function to check if the user is logged in to Spotify
-  const [isConnectedToSpotify, setIsConnectedToSpotify] = useState(false)
+  const fetchSpotifyUser = async () => {
+    try {
+      const cookies = document.cookie.split(';').map(c => c.trim())
+      const accessToken = cookies
+        .find(c => c.startsWith('spotify_access_token='))
+        ?.split('=')[1]
 
-  useEffect(() => {
-    const checkSpotifyConnection = () => {
-      const token = localStorage.getItem("spotify_access_token")
-      const expiry = localStorage.getItem("spotify_token_expiry")
+      if (!accessToken) {
+        console.log('No access token found') // Debug log
+        setIsConnectedToSpotify(false)
+        setSpotifyUsername(null)
+        return
+      }
 
-      if (token && expiry && Number(expiry) > Date.now()) {
+      console.log('Fetching user profile...') // Debug log
+
+      const response = await fetch('https://api.spotify.com/v1/me', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('User profile:', data) // Debug log
+        setSpotifyUsername(data.display_name || data.id)
         setIsConnectedToSpotify(true)
       } else {
+        throw new Error(`Failed to fetch user profile: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('Error fetching Spotify user:', error)
+      setIsConnectedToSpotify(false)
+      setSpotifyUsername(null)
+    }
+  }
+
+  // Combine auth checking effects into one
+  useEffect(() => {
+    const checkSpotifyAuth = async () => {
+      // Check cookies directly
+      const cookies = document.cookie.split(';').map(c => c.trim())
+      const hasAccessToken = cookies.some(c => c.startsWith('spotify_access_token='))
+      const hasTokenExpiry = cookies.some(c => c.startsWith('spotify_token_expiry='))
+      
+      console.log('Auth check:', { hasAccessToken, hasTokenExpiry }) // Debug log
+
+      if (hasAccessToken && hasTokenExpiry) {
+        setIsConnectedToSpotify(true)
+        // Fetch user profile if we have a token
+        await fetchSpotifyUser()
+      } else {
         setIsConnectedToSpotify(false)
+        setSpotifyUsername(null)
       }
     }
 
-    // Check on component mount
-    checkSpotifyConnection()
+    // Check immediately
+    checkSpotifyAuth()
 
-    // Set up interval to periodically check token validity
-    const connectionCheckInterval = setInterval(checkSpotifyConnection, 60000)
+    // Add interval to check every 30 seconds
+    const interval = setInterval(checkSpotifyAuth, 30000)
 
-    return () => clearInterval(connectionCheckInterval)
+    // Check when window gains focus
+    window.addEventListener('focus', checkSpotifyAuth)
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', checkSpotifyAuth)
+    }
   }, [])
 
   // Load saved credentials on component mount
@@ -172,27 +229,61 @@ export function SettingsContent() {
 
   // Add a function to disconnect from Spotify
   const disconnectSpotify = () => {
-    localStorage.removeItem("spotify_access_token")
-    localStorage.removeItem("spotify_refresh_token")
-    localStorage.removeItem("spotify_token_expiry")
+    // Clear cookies
+    document.cookie.split(';').forEach(cookie => {
+      const name = cookie.split('=')[0].trim()
+      if (name.startsWith('spotify_')) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; secure; samesite=lax`
+      }
+    })
+
+    // Update state
     setIsConnectedToSpotify(false)
+    setSpotifyUsername(null)
 
     toast({
       title: "Disconnected from Spotify",
       description: "Your Spotify account has been disconnected.",
+      variant: "default",
     })
+
+    // Force a page refresh to clear any cached states
+    router.refresh()
   }
 
   // Add a function to connect to Spotify
   const connectToSpotify = () => {
     try {
-      const authUrl = getSpotifyAuthUrl()
+      // Clear any existing Spotify-related cookies
+      document.cookie.split(';').forEach(cookie => {
+        const name = cookie.split('=')[0].trim()
+        if (name.startsWith('spotify_')) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; secure; samesite=lax`
+        }
+      })
+
+      // Clear localStorage
+      localStorage.removeItem("spotify_access_token")
+      localStorage.removeItem("spotify_refresh_token")
+      localStorage.removeItem("spotify_token_expiry")
+      localStorage.removeItem("spotify_auth_state")
+
+      // Construct Spotify auth URL
+      const authUrl = `https://accounts.spotify.com/authorize?${new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        scope: 'user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private',
+        redirect_uri: 'https://betterify.vercel.app/api/spotify/callback',
+        show_dialog: 'true' // Forces user to approve the app again
+      }).toString()}`
+
+      // Redirect to Spotify auth page
       window.location.href = authUrl
     } catch (error) {
-      console.error("Error generating Spotify auth URL:", error)
+      console.error("Error connecting to Spotify:", error)
       toast({
         title: "Error",
-        description: "There was a problem connecting to Spotify. Make sure you've saved your Client ID.",
+        description: "There was a problem connecting to Spotify. Please try again.",
         variant: "destructive",
       })
     }
@@ -246,24 +337,22 @@ export function SettingsContent() {
                 <Label htmlFor="piped-api">Piped API URL</Label>
                 <Input
                   id="piped-api"
-                  placeholder="http://localhost:8080"
-                  value={process.env.NEXT_PUBLIC_PIPED_API_URL || "http://localhost:8080"}
+                  value={process.env.NEXT_PUBLIC_PIPED_API_URL || "https://pipedapi.kavin.rocks"}
                   disabled
                 />
                 <p className="text-xs text-neutral-500">
-                  To change this, update the NEXT_PUBLIC_PIPED_API_URL in your .env.local file
+                  Using public Piped instance for production
                 </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="piped-proxy">Piped Proxy URL</Label>
                 <Input
                   id="piped-proxy"
-                  placeholder="http://localhost:8081"
-                  value={process.env.NEXT_PUBLIC_PIPED_PROXY_URL || "http://localhost:8081"}
+                  value={process.env.NEXT_PUBLIC_PIPED_PROXY_URL || "https://pipedproxy.kavin.rocks"}
                   disabled
                 />
                 <p className="text-xs text-neutral-500">
-                  To change this, update the NEXT_PUBLIC_PIPED_PROXY_URL in your .env.local file
+                  Using public Piped proxy for production
                 </p>
               </div>
             </CardContent>
@@ -349,27 +438,54 @@ export function SettingsContent() {
             <CardContent>
               <div className="space-y-4">
                 {isConnectedToSpotify ? (
-                  <div className="p-3 rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                    Your Spotify account is connected. You can now see your personal playlists in the sidebar.
+                  <div className="flex flex-col gap-4">
+                    <div 
+                      className="flex items-center gap-3 p-4 rounded-lg bg-green-100 dark:bg-green-900/30"
+                      key={`connected-${spotifyUsername}`} // Force re-render on username change
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium text-green-800 dark:text-green-400">
+                          Connected to Spotify
+                        </h4>
+                        {spotifyUsername && (
+                          <p className="text-sm text-green-700 dark:text-green-500">
+                            Logged in as {spotifyUsername}
+                          </p>
+                        )}
+                      </div>
+                      <Button 
+                        variant="destructive" 
+                        onClick={disconnectSpotify}
+                        className="shrink-0"
+                      >
+                        Disconnect
+                      </Button>
+                    </div>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                      Your Spotify account is connected. You can now access your playlists.
+                    </p>
                   </div>
                 ) : (
-                  <div className="p-3 rounded-md bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-300">
-                    Connect your Spotify account to access your personal playlists and recommendations.
+                  <div className="flex flex-col gap-4">
+                    <div className="p-4 rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                      <h4 className="font-medium text-neutral-800 dark:text-neutral-200">
+                        Not Connected
+                      </h4>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                        Connect your Spotify account to access your playlists.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={connectToSpotify} 
+                      disabled={!clientId}
+                      className="w-full bg-green-500 hover:bg-green-600 text-white"
+                    >
+                      Connect to Spotify
+                    </Button>
                   </div>
                 )}
               </div>
             </CardContent>
-            <CardFooter>
-              {isConnectedToSpotify ? (
-                <Button variant="destructive" onClick={disconnectSpotify}>
-                  Disconnect from Spotify
-                </Button>
-              ) : (
-                <Button onClick={connectToSpotify} disabled={!clientId}>
-                  Connect to Spotify
-                </Button>
-              )}
-            </CardFooter>
           </Card>
         </TabsContent>
 
@@ -386,6 +502,15 @@ export function SettingsContent() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+// Create the main page component
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div>Loading settings...</div>}>
+      <SettingsContent />
+    </Suspense>
   )
 }
 
