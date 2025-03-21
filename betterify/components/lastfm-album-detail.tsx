@@ -7,7 +7,6 @@ import { Play, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { getProxiedImageUrl } from "@/lib/utils"
 
 interface LastFmAlbumInfo {
   name: string
@@ -143,12 +142,7 @@ export function LastFmAlbumDetail({ artist, album }: { artist: string; album: st
       <div className="bg-gradient-to-b from-neutral-200 to-transparent dark:from-neutral-800 p-4 md:p-8">
         <div className="flex flex-col md:flex-row md:items-start md:space-x-6 mb-8">
           <div className="w-48 h-48 relative shadow-lg mx-auto md:mx-0 mb-4 md:mb-0">
-            <Image
-              src={getProxiedImageUrl(albumImage) || "/placeholder.svg"}
-              alt={albumInfo.name}
-              fill
-              className="object-cover"
-            />
+            <Image src={albumImage || "/placeholder.svg"} alt={albumInfo.name} fill className="object-cover" />
           </div>
           <div className="flex flex-col justify-end text-center md:text-left">
             <p className="text-sm uppercase font-medium mb-2">Album</p>
@@ -185,7 +179,7 @@ export function LastFmAlbumDetail({ artist, album }: { artist: string; album: st
 
         <div className="flex justify-center md:justify-start">
           <Button
-            className="rounded-full px-8 bg-neutral-800 dark:bg-white text-white dark:text-neutral-800 hover:bg-neutral-700 dark:hover:bg-neutral-200"
+            className="rounded-full px-8 theme-bg text-white hover:bg-neutral-700 dark:hover:bg-neutral-200 theme-glow-hover"
             onClick={() => {
               if (normalizedTracks.length > 0) {
                 // Play the first track
@@ -228,7 +222,7 @@ export function LastFmAlbumDetail({ artist, album }: { artist: string; album: st
                   return (
                     <tr
                       key={`${trackName}-${index}`}
-                      className="hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer"
+                      className="hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer theme-glow-hover"
                       onClick={() => {
                         window.dispatchEvent(
                           new CustomEvent("play-track", {

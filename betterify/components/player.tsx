@@ -12,6 +12,8 @@ import { getStreamUrl } from "@/lib/piped"
 import { toggleLikeSong, isLikedSong } from "@/lib/playlist-manager"
 import { useToast } from "@/hooks/use-toast"
 import { searchTrackOnPiped, ensureProperStreamUrl } from "@/lib/piped"
+// Import the useAppSettings hook at the top
+import { useAppSettings } from "@/hooks/use-app-settings"
 
 interface PlayerState {
   isPlaying: boolean
@@ -63,6 +65,8 @@ export function Player() {
   const { isDarkMode, themeColor } = useTheme()
   const isMobile = useIsMobile()
   const { toast } = useToast()
+  // Inside the Player component, add this after other hooks
+  const { settings } = useAppSettings()
 
   // Format time in MM:SS
   const formatTime = (seconds: number) => {
@@ -133,7 +137,7 @@ export function Player() {
 
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
-    if (!playerState.currentTrack) return
+    if (!playerState.currentTrack || !settings.videoEnabled) return
 
     if (playerState.isFullscreen) {
       document.exitFullscreen()
@@ -256,8 +260,13 @@ export function Player() {
         streamData = await searchTrackOnPiped(artist, track, album)
       }
 
-      if (!streamData) {
-        throw new Error("Failed to get stream data")
+      if (!streamData || !streamData.audioUrl) {
+        toast({
+          title: "Playback Error",
+          description: "Could not find audio for this track. Please try another one.",
+          variant: "destructive",
+        })
+        throw new Error("Failed to get stream data or audio URL")
       }
 
       // Ensure audio and video URLs are properly formatted
@@ -428,7 +437,7 @@ export function Player() {
         playerState.isFullscreen && "h-screen flex-col justify-center items-center p-8",
       )}
     >
-      {playerState.isFullscreen && playerState.currentTrack?.videoUrl && (
+      {playerState.isFullscreen && playerState.currentTrack?.videoUrl && settings.videoEnabled && (
         <div className="w-full max-w-4xl aspect-video mb-8 relative">
           <video
             ref={videoRef}
@@ -578,7 +587,7 @@ export function Player() {
             />
           </div>
 
-          {playerState.currentTrack && (
+          {playerState.currentTrack && settings.videoEnabled && (
             <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="ml-4 theme-glow-hover">
               {playerState.isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </Button>

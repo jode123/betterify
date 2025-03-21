@@ -1,6 +1,18 @@
 "use client"
 
-import { Home, Search, Library, PlusCircle, Settings, Menu, X, LogOut, User } from "lucide-react"
+import {
+  Home,
+  Search,
+  Library,
+  PlusCircle,
+  Settings,
+  Menu,
+  X,
+  LogOut,
+  User,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -12,6 +24,10 @@ import { Button } from "@/components/ui/button"
 import { useTheme } from "@/lib/theme-context"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAuthButton } from "@/components/user-auth-button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { getFeaturedPlaylists } from "@/lib/spotify"
+import { useUserData } from "@/lib/user-data-context"
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -20,20 +36,19 @@ export function Sidebar() {
   const { themeColor } = useTheme()
   const { toast } = useToast()
   const [spotifyUser, setSpotifyUser] = useState<{ display_name: string; images?: { url: string }[] } | null>(null)
+  const { userData } = useUserData()
 
-  // Mock playlists - in a real app, these would come from the Spotify API
-  const playlists = [
-    { id: "37i9dQZF1DX0XUsuxWHRQd", name: "Chill Vibes" },
-    { id: "37i9dQZF1DX76Wlfdnj7AP", name: "Beast Mode" },
-    { id: "37i9dQZF1DXcBWIGoYBM5M", name: "Today's Top Hits" },
-    { id: "37i9dQZF1DX4JAvHpjipBk", name: "New Music Friday" },
-    { id: "37i9dQZF1DX1lVhptIYRda", name: "Hot Hits USA" },
-  ]
-
-  // State for user playlists
+  // State for playlists
+  const [featuredPlaylists, setFeaturedPlaylists] = useState<Array<{ id: string; name: string }>>([])
   const [userPlaylists, setUserPlaylists] = useState<Array<{ id: string; name: string }>>([])
+  const [localPlaylists, setLocalPlaylists] = useState<Array<{ id: string; name: string }>>([])
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Collapsible state
+  const [isFeaturedOpen, setIsFeaturedOpen] = useState(true)
+  const [isUserPlaylistsOpen, setIsUserPlaylistsOpen] = useState(true)
+  const [isLocalPlaylistsOpen, setIsLocalPlaylistsOpen] = useState(true)
 
   // Check for authentication on component mount
   useEffect(() => {
@@ -109,6 +124,46 @@ export function Sidebar() {
 
     fetchUserPlaylists()
   }, [isAuthenticated])
+
+  // Effect to fetch featured playlists
+  useEffect(() => {
+    const fetchFeaturedPlaylists = async () => {
+      try {
+        setIsLoadingPlaylists(true)
+        const playlists = await getFeaturedPlaylists()
+        setFeaturedPlaylists(playlists)
+      } catch (error) {
+        console.error("Error fetching featured playlists:", error)
+      } finally {
+        setIsLoadingPlaylists(false)
+      }
+    }
+
+    fetchFeaturedPlaylists()
+  }, [])
+
+  // Effect to load local playlists
+  useEffect(() => {
+    const loadLocalPlaylists = () => {
+      try {
+        // Try to get from userData first (Clerk)
+        if (userData.playlists) {
+          setLocalPlaylists(userData.playlists)
+          return
+        }
+
+        // Fall back to localStorage
+        const savedPlaylists = localStorage.getItem("user_playlists")
+        if (savedPlaylists) {
+          setLocalPlaylists(JSON.parse(savedPlaylists))
+        }
+      } catch (error) {
+        console.error("Error loading local playlists:", error)
+      }
+    }
+
+    loadLocalPlaylists()
+  }, [userData])
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -201,40 +256,101 @@ export function Sidebar() {
 
       <ScrollArea className="flex-1 px-6">
         <div className="space-y-2 mt-2">
+          {/* Local Playlists Section */}
+          {localPlaylists.length > 0 && (
+            <Collapsible open={isLocalPlaylistsOpen} onOpenChange={setIsLocalPlaylistsOpen} className="space-y-2">
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between cursor-pointer py-2">
+                  <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                    Your Created Playlists
+                  </span>
+                  {isLocalPlaylistsOpen ? (
+                    <ChevronDown className="h-4 w-4 text-neutral-500" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-neutral-500" />
+                  )}
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                {localPlaylists.map((playlist) => (
+                  <Link
+                    key={playlist.id}
+                    href={`/playlist/${playlist.id}`}
+                    className={cn(
+                      "block py-2 px-2 text-sm text-neutral-700 dark:text-neutral-300 hover:text-black dark:hover:text-white truncate theme-glow-hover rounded-md",
+                      pathname === `/playlist/${playlist.id}` && "text-black dark:text-white font-medium theme-text",
+                    )}
+                  >
+                    {playlist.name}
+                  </Link>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Spotify User Playlists Section */}
           {isLoadingPlaylists ? (
             <div className="text-sm text-neutral-500">Loading playlists...</div>
           ) : userPlaylists.length > 0 ? (
-            <>
-              <div className="text-sm font-medium text-neutral-500 dark:text-neutral-400 pt-4 pb-2">Your Playlists</div>
-              {userPlaylists.map((playlist) => (
-                <Link
-                  key={playlist.id}
-                  href={`/playlist/${playlist.id}`}
-                  className={cn(
-                    "block py-2 px-2 text-sm text-neutral-700 dark:text-neutral-300 hover:text-black dark:hover:text-white truncate theme-glow-hover rounded-md",
-                    pathname === `/playlist/${playlist.id}` && "text-black dark:text-white font-medium theme-text",
+            <Collapsible open={isUserPlaylistsOpen} onOpenChange={setIsUserPlaylistsOpen} className="space-y-2">
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between cursor-pointer py-2">
+                  <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                    Your Spotify Playlists
+                  </span>
+                  {isUserPlaylistsOpen ? (
+                    <ChevronDown className="h-4 w-4 text-neutral-500" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-neutral-500" />
                   )}
-                >
-                  {playlist.name}
-                </Link>
-              ))}
-              <div className="border-t border-neutral-200 dark:border-neutral-700 my-4"></div>
-            </>
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                {userPlaylists.map((playlist) => (
+                  <Link
+                    key={playlist.id}
+                    href={`/playlist/${playlist.id}`}
+                    className={cn(
+                      "block py-2 px-2 text-sm text-neutral-700 dark:text-neutral-300 hover:text-black dark:hover:text-white truncate theme-glow-hover rounded-md",
+                      pathname === `/playlist/${playlist.id}` && "text-black dark:text-white font-medium theme-text",
+                    )}
+                  >
+                    {playlist.name}
+                  </Link>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
           ) : null}
 
-          <div className="text-sm font-medium text-neutral-500 dark:text-neutral-400 pt-2 pb-2">Featured Playlists</div>
-          {playlists.map((playlist) => (
-            <Link
-              key={playlist.id}
-              href={`/playlist/${playlist.id}`}
-              className={cn(
-                "block py-2 px-2 text-sm text-neutral-700 dark:text-neutral-300 hover:text-black dark:hover:text-white truncate theme-glow-hover rounded-md",
-                pathname === `/playlist/${playlist.id}` && "text-black dark:text-white font-medium theme-text",
-              )}
-            >
-              {playlist.name}
-            </Link>
-          ))}
+          {/* Featured Playlists Section */}
+          {featuredPlaylists.length > 0 && (
+            <Collapsible open={isFeaturedOpen} onOpenChange={setIsFeaturedOpen} className="space-y-2">
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between cursor-pointer py-2">
+                  <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Featured Playlists</span>
+                  {isFeaturedOpen ? (
+                    <ChevronDown className="h-4 w-4 text-neutral-500" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-neutral-500" />
+                  )}
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                {featuredPlaylists.map((playlist) => (
+                  <Link
+                    key={playlist.id}
+                    href={`/playlist/${playlist.id}`}
+                    className={cn(
+                      "block py-2 px-2 text-sm text-neutral-700 dark:text-neutral-300 hover:text-black dark:hover:text-white truncate theme-glow-hover rounded-md",
+                      pathname === `/playlist/${playlist.id}` && "text-black dark:text-white font-medium theme-text",
+                    )}
+                  >
+                    {playlist.name}
+                  </Link>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
       </ScrollArea>
 
@@ -255,17 +371,21 @@ export function Sidebar() {
           )}
         </div>
 
-        {isAuthenticated && spotifyUser && (
-          <div className="flex items-center space-x-2 p-2 rounded-md bg-neutral-200 dark:bg-neutral-700 theme-glow-hover">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={spotifyUser.images?.[0]?.url} />
-              <AvatarFallback>
-                <User size={16} />
-              </AvatarFallback>
-            </Avatar>
-            <div className="text-sm font-medium truncate">{spotifyUser.display_name}</div>
-          </div>
-        )}
+        <div className="flex items-center justify-between">
+          <UserAuthButton />
+
+          {isAuthenticated && spotifyUser && (
+            <div className="flex items-center space-x-2 p-2 rounded-md bg-neutral-200 dark:bg-neutral-700 theme-glow-hover">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={spotifyUser.images?.[0]?.url} />
+                <AvatarFallback>
+                  <User size={16} />
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-sm font-medium truncate">{spotifyUser.display_name}</div>
+            </div>
+          )}
+        </div>
       </div>
     </>
   )

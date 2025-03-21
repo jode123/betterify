@@ -1,9 +1,5 @@
 const SPOTIFY_API_URL = "https://api.spotify.com/v1"
 
-// Replace these with your actual Spotify API credentials
-const HARDCODED_CLIENT_ID = "f386c406d93949f5b0e886d55e70804e"
-const HARDCODED_CLIENT_SECRET = "0b15b2f8af744fdc89a354f2d4c333c3"
-
 // Function to check if token is expired and refresh if needed
 async function getValidAccessToken() {
   if (typeof window === "undefined") {
@@ -24,8 +20,12 @@ async function getValidAccessToken() {
   // If we have a refresh token, try to refresh
   if (refreshToken) {
     try {
-      const clientId = localStorage.getItem("spotify_client_id") || HARDCODED_CLIENT_ID
-      const clientSecret = localStorage.getItem("spotify_client_secret") || HARDCODED_CLIENT_SECRET
+      const clientId = localStorage.getItem("spotify_client_id") || process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID
+      const clientSecret = localStorage.getItem("spotify_client_secret")
+
+      if (!clientId || !clientSecret) {
+        throw new Error("Missing Spotify credentials for token refresh")
+      }
 
       const response = await fetch("https://accounts.spotify.com/api/token", {
         method: "POST",
@@ -72,9 +72,9 @@ async function getValidAccessToken() {
 }
 
 async function getAccessToken() {
-  // Try to get credentials from localStorage if running on client
-  let clientId = process.env.SPOTIFY_CLIENT_ID || HARDCODED_CLIENT_ID
-  let clientSecret = process.env.SPOTIFY_CLIENT_SECRET || HARDCODED_CLIENT_SECRET
+  // Try to get credentials from environment or localStorage
+  let clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID
+  let clientSecret = process.env.SPOTIFY_CLIENT_SECRET
 
   // This will only run on the client side
   if (typeof window !== "undefined") {
@@ -128,9 +128,6 @@ export async function getFeaturedPlaylists() {
 
     const data = await response.json()
 
-    // Debug log to see the actual response structure
-    console.log("Spotify API response:", JSON.stringify(data, null, 2))
-
     // Check if the expected structure exists
     if (!data.playlists || !data.playlists.items) {
       console.error("Unexpected API response structure:", data)
@@ -140,131 +137,166 @@ export async function getFeaturedPlaylists() {
     return data.playlists.items
   } catch (error) {
     console.error("Error in getFeaturedPlaylists:", error)
-    throw error
+    return [] // Return empty array on error
   }
 }
 
 // Alternative function to get playlists if the featured endpoint doesn't work
 export async function getCategories() {
-  const accessToken = await getValidAccessToken()
+  try {
+    const accessToken = await getValidAccessToken()
 
-  const response = await fetch(`${SPOTIFY_API_URL}/browse/categories?limit=20`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+    const response = await fetch(`${SPOTIFY_API_URL}/browse/categories?limit=20`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch categories: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch categories: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.categories.items
+  } catch (error) {
+    console.error("Error fetching categories:", error)
+    return []
   }
-
-  const data = await response.json()
-  return data.categories.items
 }
 
 export async function getCategoryPlaylists(categoryId: string) {
-  const accessToken = await getValidAccessToken()
+  try {
+    const accessToken = await getValidAccessToken()
 
-  const response = await fetch(`${SPOTIFY_API_URL}/browse/categories/${categoryId}/playlists?limit=10`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+    const response = await fetch(`${SPOTIFY_API_URL}/browse/categories/${categoryId}/playlists?limit=10`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch category playlists: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch category playlists: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.playlists?.items || []
+  } catch (error) {
+    console.error("Error fetching category playlists:", error)
+    return []
   }
-
-  const data = await response.json()
-  return data.playlists?.items || []
 }
 
 export async function getPlaylist(playlistId: string) {
-  const accessToken = await getValidAccessToken()
+  try {
+    const accessToken = await getValidAccessToken()
 
-  const response = await fetch(`${SPOTIFY_API_URL}/playlists/${playlistId}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+    const response = await fetch(`${SPOTIFY_API_URL}/playlists/${playlistId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch playlist: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch playlist: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error("Error fetching playlist:", error)
+    throw error
   }
-
-  const data = await response.json()
-  return data
 }
 
 export async function getArtist(artistId: string) {
-  const accessToken = await getValidAccessToken()
+  try {
+    const accessToken = await getValidAccessToken()
 
-  const response = await fetch(`${SPOTIFY_API_URL}/artists/${artistId}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+    const response = await fetch(`${SPOTIFY_API_URL}/artists/${artistId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch artist: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch artist: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error("Error fetching artist:", error)
+    throw error
   }
-
-  const data = await response.json()
-  return data
 }
 
 export async function getArtistTopTracks(artistId: string, market = "US") {
-  const accessToken = await getValidAccessToken()
+  try {
+    const accessToken = await getValidAccessToken()
 
-  const response = await fetch(`${SPOTIFY_API_URL}/artists/${artistId}/top-tracks?market=${market}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+    const response = await fetch(`${SPOTIFY_API_URL}/artists/${artistId}/top-tracks?market=${market}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch artist top tracks: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch artist top tracks: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.tracks
+  } catch (error) {
+    console.error("Error fetching artist top tracks:", error)
+    return []
   }
-
-  const data = await response.json()
-  return data.tracks
 }
 
 export async function searchSpotify(query: string, types = ["track", "artist", "album"]) {
-  const accessToken = await getValidAccessToken()
+  try {
+    const accessToken = await getValidAccessToken()
 
-  const response = await fetch(`${SPOTIFY_API_URL}/search?q=${query}&type=${types.join(",")}`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+    const response = await fetch(`${SPOTIFY_API_URL}/search?q=${query}&type=${types.join(",")}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-  if (!response.ok) {
-    throw new Error(`Failed to search Spotify: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`Failed to search Spotify: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error("Error searching Spotify:", error)
+    throw error
   }
-
-  const data = await response.json()
-  return data
 }
 
 export async function getUserPlaylists(accessToken: string) {
-  const response = await fetch(`${SPOTIFY_API_URL}/me/playlists`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
+  try {
+    const response = await fetch(`${SPOTIFY_API_URL}/me/playlists`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch user playlists: ${response.status}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user playlists: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.items || []
+  } catch (error) {
+    console.error("Error fetching user playlists:", error)
+    return []
   }
-
-  const data = await response.json()
-  return data.items || []
 }
 
 export function getSpotifyAuthUrl() {
-  // Get client ID from environment or localStorage or hardcoded value
-  let clientId = process.env.SPOTIFY_CLIENT_ID || HARDCODED_CLIENT_ID
+  // Get client ID from environment or localStorage
+  let clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID
 
   if (typeof window !== "undefined") {
     const storedClientId = localStorage.getItem("spotify_client_id")
@@ -299,7 +331,7 @@ export function getSpotifyAuthUrl() {
   ].join(" ")
 
   // Get client secret for passing to callback
-  const clientSecret = localStorage.getItem("spotify_client_secret") || HARDCODED_CLIENT_SECRET
+  const clientSecret = localStorage.getItem("spotify_client_secret")
 
   // Construct the authorization URL with parameters
   const params = new URLSearchParams({
@@ -312,8 +344,8 @@ export function getSpotifyAuthUrl() {
   })
 
   // Add client ID and secret as separate parameters
-  params.append("client_id", clientId)
-  params.append("client_secret", clientSecret)
+  if (clientId) params.append("client_id", clientId)
+  if (clientSecret) params.append("client_secret", clientSecret)
 
   return `https://accounts.spotify.com/authorize?${params.toString()}`
 }

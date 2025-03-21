@@ -1,19 +1,31 @@
-# Music App with Piped Integration
+# Music App
 
-This music app uses Piped for streaming music and videos. Follow the instructions below to set up and run the application.
+A clean music streaming app inspired by Apple Music, with Spotify and Last.fm integration.
 
-## Prerequisites
+## Features
 
-- [Docker](https://www.docker.com/get-started)
-- [Node.js](https://nodejs.org/) (v18 or later)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- Stream music from YouTube via Piped API
+- Browse and search for music
+- Create and manage playlists
+- Connect to Spotify to access your playlists
+- View Last.fm artist and album information
+- User authentication with Clerk
+- Customizable settings
+- Dark mode support
+- Mobile-responsive design
 
-## Setup
+## Getting Started
 
-1. Clone this repository
-2. Install dependencies:
+### Prerequisites
+
+- Node.js 18+ and npm
+- A Clerk account for authentication
+- (Optional) Spotify Developer account for Spotify integration
+
+### Installation
+
+1. Clone the repository:
    ```bash
-   npm install
-   # or
-   yarn
+   git clone https://github.com/yourusername/music-app.git
+   cd music-app
 
