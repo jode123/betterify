@@ -92,7 +92,13 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
 export function useAppSettings() {
   const context = useContext(AppSettingsContext)
   if (context === undefined) {
-    throw new Error("useAppSettings must be used within an AppSettingsProvider")
+    // Return a default context if used outside provider
+    return {
+      settings: DEFAULT_SETTINGS,
+      updateSetting: () => {},
+      resetSettings: () => {},
+      saveSettings: () => {},
+    }
   }
   return context
 }

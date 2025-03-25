@@ -12,7 +12,6 @@ import { getStreamUrl } from "@/lib/piped"
 import { toggleLikeSong, isLikedSong } from "@/lib/playlist-manager"
 import { useToast } from "@/hooks/use-toast"
 import { searchTrackOnPiped, ensureProperStreamUrl } from "@/lib/piped"
-// Import the useAppSettings hook at the top
 import { useAppSettings } from "@/hooks/use-app-settings"
 
 interface PlayerState {
@@ -24,8 +23,9 @@ interface PlayerState {
     thumbnailUrl: string
     audioUrl: string
     videoUrl?: string
-    videoId: string
+    videoId?: string
     duration: number
+    isLocal?: boolean
   } | null
   volume: number
   currentTime: number
@@ -36,16 +36,25 @@ interface PlayerState {
     artist: string
     album?: string
     videoId?: string
+    audioUrl?: string
+    isLocal?: boolean
   }>
   history: Array<{
     title: string
     artist: string
     album?: string
     videoId?: string
+    audioUrl?: string
+    isLocal?: boolean
   }>
 }
 
 export function Player() {
+  // Check if we're in a browser environment before using hooks that depend on it
+  const isBrowser = typeof window !== "undefined"
+  const { isDarkMode, themeColor } = useTheme()
+  const isMobile = isBrowser ? useIsMobile() : false
+
   const [playerState, setPlayerState] = useState<PlayerState>({
     isPlaying: false,
     currentTrack: null,
@@ -62,10 +71,7 @@ export function Player() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const playerRef = useRef<HTMLDivElement>(null)
-  const { isDarkMode, themeColor } = useTheme()
-  const isMobile = useIsMobile()
   const { toast } = useToast()
-  // Inside the Player component, add this after other hooks
   const { settings } = useAppSettings()
 
   // Format time in MM:SS
@@ -148,7 +154,7 @@ export function Player() {
 
   // Handle liking the current track
   const handleLikeCurrentTrack = () => {
-    if (!playerState.currentTrack) return
+    if (!playerState.currentTrack || playerState.currentTrack.isLocal) return
 
     const { title, artist, thumbnailUrl, videoId, duration } = playerState.currentTrack
 
@@ -157,7 +163,7 @@ export function Player() {
       title,
       artist,
       thumbnailUrl,
-      videoId,
+      videoId: videoId || "",
       duration,
     }
 
@@ -185,6 +191,8 @@ export function Player() {
             artist: playerState.currentTrack.artist,
             album: playerState.currentTrack.album,
             videoId: playerState.currentTrack.videoId,
+            audioUrl: playerState.currentTrack.audioUrl,
+            isLocal: playerState.currentTrack.isLocal,
           },
         ]
       : playerState.history
@@ -197,7 +205,11 @@ export function Player() {
 
     // Play the next track
     if (nextTrack) {
-      playTrack(nextTrack.artist, nextTrack.title, nextTrack.album, nextTrack.videoId)
+      if (nextTrack.isLocal && nextTrack.audioUrl) {
+        playLocalTrack(nextTrack.title, nextTrack.artist, nextTrack.audioUrl)
+      } else {
+        playTrack(nextTrack.artist, nextTrack.title, nextTrack.album, nextTrack.videoId)
+      }
     }
   }
 
@@ -227,6 +239,8 @@ export function Player() {
             artist: playerState.currentTrack.artist,
             album: playerState.currentTrack.album,
             videoId: playerState.currentTrack.videoId,
+            audioUrl: playerState.currentTrack.audioUrl,
+            isLocal: playerState.currentTrack.isLocal,
           },
           ...playerState.queue,
         ]
@@ -240,8 +254,43 @@ export function Player() {
 
     // Play the previous track
     if (prevTrack) {
-      playTrack(prevTrack.artist, prevTrack.title, prevTrack.album, prevTrack.videoId)
+      if (prevTrack.isLocal && prevTrack.audioUrl) {
+        playLocalTrack(prevTrack.title, prevTrack.artist, prevTrack.audioUrl)
+      } else {
+        playTrack(prevTrack.artist, prevTrack.title, prevTrack.album, prevTrack.videoId)
+      }
     }
+  }
+
+  // Play a local track
+  const playLocalTrack = (title: string, artist: string, audioUrl: string) => {
+    setPlayerState((prev) => ({
+      ...prev,
+      currentTrack: {
+        title,
+        artist,
+        thumbnailUrl: "/placeholder.svg?height=300&width=300",
+        audioUrl,
+        duration: 0, // Will be updated when metadata loads
+        isLocal: true,
+      },
+      isPlaying: true,
+      currentTime: 0,
+    }))
+
+    // Play the track
+    setTimeout(() => {
+      if (audioRef.current) {
+        audioRef.current.play().catch((error) => {
+          console.error("Error playing audio:", error)
+          toast({
+            title: "Playback Error",
+            description: "Failed to play audio. Please check your connection and try again.",
+            variant: "destructive",
+          })
+        })
+      }
+    }, 100)
   }
 
   // Play a track with Piped
@@ -285,6 +334,7 @@ export function Player() {
           videoUrl: videoUrl,
           videoId: videoId || streamData.videoId,
           duration: streamData.duration,
+          isLocal: false,
         },
         isPlaying: true,
         currentTime: 0,
@@ -323,6 +373,10 @@ export function Player() {
         setPlayerState((prev) => ({
           ...prev,
           currentTime: audioRef.current?.currentTime || 0,
+          currentTrack: prev.currentTrack && {
+            ...prev.currentTrack,
+            duration: audioRef.current?.duration || prev.currentTrack.duration,
+          },
         }))
       }
     }
@@ -380,15 +434,24 @@ export function Player() {
       playTrack(uploader, title, undefined, videoId)
     }
 
+    // Listen for play-local custom events
+    const handlePlayLocal = async (event: Event) => {
+      const { title, artist, audioUrl } = (event as CustomEvent).detail
+
+      if (!audioUrl) return
+
+      playLocalTrack(title, artist, audioUrl)
+    }
+
     // Listen for add-to-queue custom events
     const handleAddToQueue = (event: Event) => {
-      const { artist, track, album, videoId } = (event as CustomEvent).detail
+      const { artist, track, album, videoId, audioUrl, isLocal } = (event as CustomEvent).detail
 
       if (!artist || !track) return
 
       setPlayerState((prev) => ({
         ...prev,
-        queue: [...prev.queue, { artist, title: track, album, videoId }],
+        queue: [...prev.queue, { artist, title: track, album, videoId, audioUrl, isLocal }],
       }))
 
       toast({
@@ -399,11 +462,13 @@ export function Player() {
 
     window.addEventListener("play-track", handlePlayTrack)
     window.addEventListener("play-piped", handlePlayPiped)
+    window.addEventListener("play-local", handlePlayLocal)
     window.addEventListener("add-to-queue", handleAddToQueue)
 
     return () => {
       window.removeEventListener("play-track", handlePlayTrack)
       window.removeEventListener("play-piped", handlePlayPiped)
+      window.removeEventListener("play-local", handlePlayLocal)
       window.removeEventListener("add-to-queue", handleAddToQueue)
     }
   }, [toast])
@@ -478,17 +543,23 @@ export function Player() {
                 {playerState.currentTrack.artist}
               </div>
             </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="ml-2 h-8 w-8 theme-glow-hover"
-              onClick={handleLikeCurrentTrack}
-            >
-              <Heart
-                size={16}
-                className={isLikedSong(playerState.currentTrack.videoId) ? "fill-red-500 text-red-500" : ""}
-              />
-            </Button>
+            {!playerState.currentTrack.isLocal && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="ml-2 h-8 w-8 theme-glow-hover"
+                onClick={handleLikeCurrentTrack}
+              >
+                <Heart
+                  size={16}
+                  className={
+                    playerState.currentTrack.videoId && isLikedSong(playerState.currentTrack.videoId)
+                      ? "fill-red-500 text-red-500"
+                      : ""
+                  }
+                />
+              </Button>
+            )}
           </div>
         ) : (
           <div className="flex items-center">
@@ -587,7 +658,7 @@ export function Player() {
             />
           </div>
 
-          {playerState.currentTrack && settings.videoEnabled && (
+          {playerState.currentTrack && !playerState.currentTrack.isLocal && settings.videoEnabled && (
             <Button variant="ghost" size="icon" onClick={toggleFullscreen} className="ml-4 theme-glow-hover">
               {playerState.isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
             </Button>

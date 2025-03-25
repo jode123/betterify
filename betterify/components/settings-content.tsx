@@ -19,7 +19,7 @@ export function SettingsContent() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const { userData, saveSpotifyTokens } = useUserData()
-  const { settings, updateSettings } = useAppSettings()
+  const { settings, updateSetting, saveSettings } = useAppSettings()
 
   // Spotify credentials state
   const [spotifyClientId, setSpotifyClientId] = useState("")
@@ -46,6 +46,8 @@ export function SettingsContent() {
 
   // Handle Spotify auth callback
   useEffect(() => {
+    if (!searchParams) return
+
     const handleSpotifyCallback = async () => {
       const authSuccess = searchParams.get("auth_success")
       const error = searchParams.get("error")
@@ -89,11 +91,11 @@ export function SettingsContent() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Load Spotify credentials
-      const savedClientId = localStorage.getItem("spotify_client_id")
+      const savedClientId = localStorage.getItem("spotify_client_id") || process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID
       if (savedClientId) setSpotifyClientId(savedClientId)
 
       // Don't display the secret, just indicate if it's set
-      const savedClientSecret = localStorage.getItem("spotify_client_secret")
+      const savedClientSecret = localStorage.getItem("spotify_client_secret") || process.env.SPOTIFY_CLIENT_SECRET
       if (savedClientSecret) setSpotifyClientSecret("••••••••••••••••••••••••••")
 
       // Load Piped API settings
@@ -112,7 +114,7 @@ export function SettingsContent() {
       setPreferredSource(settings.preferredSource || "auto")
       setAudioQuality(settings.audioQuality || "auto")
       setVideoQuality(settings.videoQuality || "720p")
-      setDisableVideo(settings.disableVideo !== undefined ? settings.disableVideo : true)
+      setDisableVideo(settings.videoEnabled !== undefined ? !settings.videoEnabled : true)
 
       // UI settings
       setUiDensity(settings.uiDensity || "comfortable")
@@ -281,15 +283,15 @@ export function SettingsContent() {
 
   // Save playback settings
   const savePlaybackSettings = () => {
-    updateSettings({
-      preferredSource,
-      audioQuality,
-      videoQuality,
-      disableVideo,
-      uiDensity,
-      cacheEnabled,
-      cacheSize,
-    })
+    updateSetting("preferredSource", preferredSource)
+    updateSetting("audioQuality", audioQuality)
+    updateSetting("videoQuality", videoQuality)
+    updateSetting("videoEnabled", !disableVideo)
+    updateSetting("uiDensity", uiDensity)
+    updateSetting("cacheEnabled", cacheEnabled)
+    updateSetting("cacheSize", cacheSize)
+
+    saveSettings()
 
     toast({
       title: "Settings Saved",

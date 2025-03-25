@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useCopyrightWarning } from "@/components/copyright-warning-modal"
 
 interface LastFmArtistInfo {
   name: string
@@ -76,6 +77,7 @@ export function LastFmArtistDetail({ name }: { name: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showFullBio, setShowFullBio] = useState(false)
+  const { showCopyrightWarning } = useCopyrightWarning()
 
   const placeholder = "/placeholder.svg?height=300&width=300"
 
@@ -104,6 +106,16 @@ export function LastFmArtistDetail({ name }: { name: string }) {
 
     fetchArtistData()
   }, [name])
+
+  const handlePlayTrack = (artist: string, track: string) => {
+    showCopyrightWarning(() => {
+      window.dispatchEvent(
+        new CustomEvent("play-track", {
+          detail: { artist, track },
+        }),
+      )
+    })
+  }
 
   if (isLoading) {
     return (
@@ -196,11 +208,7 @@ export function LastFmArtistDetail({ name }: { name: string }) {
                 const track = topTracks[0]
                 const artistName = track.artist.name
                 const trackName = track.name
-                window.dispatchEvent(
-                  new CustomEvent("play-track", {
-                    detail: { artist: artistName, track: trackName },
-                  }),
-                )
+                handlePlayTrack(artistName, trackName)
               }
             }}
           >
@@ -239,94 +247,104 @@ export function LastFmArtistDetail({ name }: { name: string }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {topTracks.map((track, index) => (
-                    <tr
-                      key={track.name}
-                      className="hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer theme-glow-hover"
-                      onClick={() => {
-                        window.dispatchEvent(
-                          new CustomEvent("play-track", {
-                            detail: { artist: track.artist.name, track: track.name },
-                          }),
-                        )
-                      }}
-                    >
-                      <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400">{index + 1}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 relative mr-3 flex-shrink-0">
-                            <Image
-                              src={track.image.find((img) => img.size === "medium")?.["#text"] || placeholder}
-                              alt={track.name}
-                              fill
-                              className="object-cover"
-                            />
+                  {topTracks.length > 0 ? (
+                    topTracks.map((track, index) => (
+                      <tr
+                        key={track.name}
+                        className="hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer theme-glow-hover"
+                        onClick={() => handlePlayTrack(track.artist.name, track.name)}
+                      >
+                        <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400">{index + 1}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 relative mr-3 flex-shrink-0">
+                              <Image
+                                src={track.image.find((img) => img.size === "medium")?.["#text"] || placeholder}
+                                alt={track.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="font-medium">{track.name}</div>
                           </div>
-                          <div className="font-medium">{track.name}</div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right text-neutral-500 dark:text-neutral-400">
-                        {Number.parseInt(track.listeners).toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right text-neutral-500 dark:text-neutral-400">
+                          {Number.parseInt(track.listeners).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-3 text-center text-neutral-500">
+                        No tracks found for this artist
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
           </TabsContent>
 
           <TabsContent value="albums" className="p-4 md:p-8 pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {topAlbums.map((album) => (
-                <Link
-                  href={`/lastfm/album/${encodeURIComponent(album.artist.name)}/${encodeURIComponent(album.name)}`}
-                  key={album.name}
-                >
-                  <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
-                    <CardContent className="p-0">
-                      <div className="aspect-square relative">
-                        <Image
-                          src={album.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
-                          alt={album.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-semibold truncate">{album.name}</h3>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                          {Number.parseInt(album.playcount).toLocaleString()} plays
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+            {topAlbums.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                {topAlbums.map((album) => (
+                  <Link
+                    href={`/lastfm/album/${encodeURIComponent(album.artist.name)}/${encodeURIComponent(album.name)}`}
+                    key={album.name}
+                  >
+                    <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
+                      <CardContent className="p-0">
+                        <div className="aspect-square relative">
+                          <Image
+                            src={album.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
+                            alt={album.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold truncate">{album.name}</h3>
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                            {Number.parseInt(album.playcount).toLocaleString()} plays
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-neutral-500">No albums found for this artist</div>
+            )}
           </TabsContent>
 
           <TabsContent value="similar" className="p-4 md:p-8 pt-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {artistInfo.similar?.artist.map((artist) => (
-                <Link href={`/lastfm/artist/${encodeURIComponent(artist.name)}`} key={artist.name}>
-                  <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
-                    <CardContent className="p-0">
-                      <div className="aspect-square relative">
-                        <Image
-                          src={artist.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
-                          alt={artist.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-semibold truncate">{artist.name}</h3>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+            {artistInfo.similar?.artist && artistInfo.similar.artist.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                {artistInfo.similar?.artist.map((artist) => (
+                  <Link href={`/lastfm/artist/${encodeURIComponent(artist.name)}`} key={artist.name}>
+                    <Card className="overflow-hidden bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow theme-glow-hover">
+                      <CardContent className="p-0">
+                        <div className="aspect-square relative">
+                          <Image
+                            src={artist.image.find((img) => img.size === "extralarge")?.["#text"] || placeholder}
+                            alt={artist.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold truncate">{artist.name}</h3>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-neutral-500">No similar artists found</div>
+            )}
           </TabsContent>
         </ScrollArea>
       </Tabs>

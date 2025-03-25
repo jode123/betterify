@@ -1,40 +1,38 @@
 import type React from "react"
+import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/lib/theme-context"
-import { AppSettingsProvider } from "@/hooks/use-app-settings"
-import { ClerkProvider } from "@clerk/nextjs"
-import { UserDataProvider } from "@/lib/user-data-context"
-import { SimpleUserDataProvider } from "@/lib/fallback-user-data-context"
+import { SessionProvider } from "@/components/session-provider"
+import { Toaster } from "@/components/ui/toaster"
+import { CopyrightWarningProvider } from "@/components/copyright-warning-modal"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Music App",
-  description: "A clean music streaming app inspired by Apple Music",
+  description: "A modern music streaming application",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
-        <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <SessionProvider>
           <ThemeProvider>
-            <AppSettingsProvider>
-              {/* We're using a double-provider approach to handle build-time issues */}
-              <SimpleUserDataProvider>
-                <UserDataProvider>{children}</UserDataProvider>
-              </SimpleUserDataProvider>
-            </AppSettingsProvider>
+            <CopyrightWarningProvider>
+              {children}
+              <Toaster />
+            </CopyrightWarningProvider>
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </SessionProvider>
+      </body>
+    </html>
   )
 }
 

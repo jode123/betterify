@@ -11,59 +11,79 @@ interface ThemeContextType {
   setIsDarkMode: (isDark: boolean) => void
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
+// Create a default context value to avoid undefined errors
+const defaultThemeContext: ThemeContextType = {
+  themeColor: "blue",
+  setThemeColor: () => {},
+  isDarkMode: false,
+  setIsDarkMode: () => {},
+}
+
+const ThemeContext = createContext<ThemeContextType>(defaultThemeContext)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeColor, setThemeColor] = useState<ThemeColor>("blue")
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  // Load theme preferences from localStorage on mount
+  // Only run on client side
   useEffect(() => {
-    const storedThemeColor = localStorage.getItem("theme-color") as ThemeColor
-    const storedDarkMode = localStorage.getItem("dark-mode")
+    setMounted(true)
 
-    if (storedThemeColor && Object.keys(getThemeColor(storedThemeColor)).length) {
-      setThemeColor(storedThemeColor)
-    }
+    try {
+      const storedThemeColor = localStorage.getItem("theme-color") as ThemeColor
+      const storedDarkMode = localStorage.getItem("dark-mode")
 
-    if (storedDarkMode !== null) {
-      setIsDarkMode(storedDarkMode === "true")
-    } else {
-      // Check system preference
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-      setIsDarkMode(prefersDark)
+      if (storedThemeColor && getThemeColor(storedThemeColor)) {
+        setThemeColor(storedThemeColor)
+      }
+
+      if (storedDarkMode !== null) {
+        setIsDarkMode(storedDarkMode === "true")
+      } else {
+        // Check system preference
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
+        setIsDarkMode(prefersDark)
+      }
+    } catch (error) {
+      console.error("Error loading theme preferences:", error)
     }
   }, [])
 
   // Update localStorage and apply theme when changed
   useEffect(() => {
-    localStorage.setItem("theme-color", themeColor)
-    localStorage.setItem("dark-mode", String(isDarkMode))
+    if (!mounted) return
 
-    // Apply theme to document
-    const theme = getThemeColor(themeColor)
-    document.documentElement.style.setProperty("--theme-primary", theme.primaryColor)
-    document.documentElement.style.setProperty("--theme-primary-hover", theme.primaryColorHover)
-    document.documentElement.style.setProperty("--theme-glow", theme.glowColor)
+    try {
+      localStorage.setItem("theme-color", themeColor)
+      localStorage.setItem("dark-mode", String(isDarkMode))
 
-    // Apply dark mode
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
+      // Apply theme to document
+      const theme = getThemeColor(themeColor)
+      document.documentElement.style.setProperty("--theme-primary", theme.primaryColor)
+      document.documentElement.style.setProperty("--theme-primary-hover", theme.primaryColorHover)
+      document.documentElement.style.setProperty("--theme-glow", theme.glowColor)
+
+      // Apply dark mode
+      if (isDarkMode) {
+        document.documentElement.classList.add("dark")
+      } else {
+        document.documentElement.classList.remove("dark")
+      }
+    } catch (error) {
+      console.error("Error saving theme preferences:", error)
     }
-  }, [themeColor, isDarkMode])
+  }, [themeColor, isDarkMode, mounted])
 
-  return (
-    <ThemeContext.Provider value={{ themeColor, setThemeColor, isDarkMode, setIsDarkMode }}>
-      {children}
-    </ThemeContext.Provider>
-  )
+  // Provide the actual values only after mounting to avoid hydration mismatch
+  const contextValue = mounted ? { themeColor, setThemeColor, isDarkMode, setIsDarkMode } : defaultThemeContext
+
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>
 }
 
 export function useTheme() {
   const context = useContext(ThemeContext)
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useTheme must be used within a ThemeProvider")
   }
   return context

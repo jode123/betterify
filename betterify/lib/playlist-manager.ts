@@ -1,5 +1,3 @@
-import { useUserData } from "@/lib/user-data-context"
-
 export interface Song {
   id: string
   title: string
@@ -26,18 +24,10 @@ function generateUniqueId(prefix = "playlist"): string {
   return `${prefix}_${timestamp}_${randomStr}`
 }
 
-// Get all playlists from user data or local storage
+// Get all playlists from local storage
 export function getPlaylists(): Playlist[] {
   // Fallback to localStorage
   if (typeof window === "undefined") return []
-
-  // Use a state variable to hold the user data
-  const userData = useUserData()
-
-  // Try to get from user data context first
-  if (userData && userData.userData && userData.userData.playlists) {
-    return userData.userData.playlists
-  }
 
   const playlistsJson = localStorage.getItem("user_playlists")
   if (!playlistsJson) return []
@@ -147,19 +137,13 @@ export function removeSongFromPlaylist(playlistId: string, songId: string): bool
   return true
 }
 
-// Save playlists to user data or local storage
+// Save playlists to local storage
 function savePlaylists(playlists: Playlist[]): void {
-  const userData = useUserData()
-
-  // Try to save to user data context first
-  if (userData && userData.savePlaylists) {
-    userData.savePlaylists(playlists)
-    return
-  }
-
-  // Fallback to localStorage
   if (typeof window === "undefined") return
   localStorage.setItem("user_playlists", JSON.stringify(playlists))
+
+  // Dispatch a storage event to notify other components
+  window.dispatchEvent(new Event("storage"))
 }
 
 // Liked Songs functionality
@@ -210,6 +194,9 @@ export function toggleLikeSong(song: Song): boolean {
 function saveLikedSongs(songs: Song[]): void {
   if (typeof window === "undefined") return
   localStorage.setItem("liked_songs", JSON.stringify(songs))
+
+  // Dispatch a storage event to notify other components
+  window.dispatchEvent(new Event("storage"))
 }
 
 // Initialize default playlists if none exist

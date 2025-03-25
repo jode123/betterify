@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { createContext, useContext, useState, useEffect } from "react"
-import { useUser } from "@clerk/nextjs"
+import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 
 interface UserData {
@@ -25,20 +25,20 @@ interface UserDataContextType {
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined)
 
 export function UserDataProvider({ children }: { children: React.ReactNode }) {
-  const { user, isLoaded, isSignedIn } = useUser()
+  const { data: session, status } = useSession()
   const [userData, setUserData] = useState<UserData>({})
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-  // Load user data when user is loaded and signed in
+  // Load user data when session is loaded
   useEffect(() => {
     async function loadUserData() {
-      if (!isLoaded) {
-        // Still loading Clerk, don't do anything yet
+      if (status === "loading") {
+        // Still loading session, don't do anything yet
         return
       }
 
-      if (!isSignedIn) {
+      if (status === "unauthenticated") {
         // User is not signed in, we can stop loading
         setIsLoading(false)
         return
@@ -47,11 +47,12 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
       try {
         setIsLoading(true)
 
-        // Get user's public metadata
-        const publicMetadata = (user?.publicMetadata as UserData) || {}
-
-        // Set user data from metadata
-        setUserData(publicMetadata)
+        // In a real app, you would fetch user data from your API
+        // For now, we'll just use localStorage as a fallback
+        const storedData = localStorage.getItem("user_data")
+        if (storedData) {
+          setUserData(JSON.parse(storedData))
+        }
       } catch (error) {
         console.error("Error loading user data:", error)
         toast({
@@ -65,18 +66,10 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
     }
 
     loadUserData()
-  }, [isLoaded, isSignedIn, user, toast])
+  }, [status, toast])
 
-  // Save Spotify tokens to user metadata
+  // Save Spotify tokens
   const saveSpotifyTokens = async (accessToken: string, refreshToken: string, expiresIn: number) => {
-    if (!isSignedIn || !user) {
-      // If not signed in, save to localStorage as fallback
-      localStorage.setItem("spotify_access_token", accessToken)
-      localStorage.setItem("spotify_refresh_token", refreshToken)
-      localStorage.setItem("spotify_token_expiry", (Date.now() + expiresIn * 1000).toString())
-      return
-    }
-
     try {
       // Calculate expiry timestamp
       const expiryTimestamp = Date.now() + expiresIn * 1000
@@ -89,15 +82,15 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
         spotifyTokenExpiry: expiryTimestamp,
       }))
 
-      // Update user metadata
-      await user.update({
-        publicMetadata: {
-          ...user.publicMetadata,
-          spotifyToken: accessToken,
-          spotifyRefreshToken: refreshToken,
-          spotifyTokenExpiry: expiryTimestamp,
-        },
-      })
+      // In a real app, you would save this to your database
+      // For now, we'll just use localStorage
+      const updatedData = {
+        ...userData,
+        spotifyToken: accessToken,
+        spotifyRefreshToken: refreshToken,
+        spotifyTokenExpiry: expiryTimestamp,
+      }
+      localStorage.setItem("user_data", JSON.stringify(updatedData))
 
       toast({
         title: "Success",
@@ -118,14 +111,8 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Save playlists to user metadata
+  // Save playlists
   const savePlaylists = async (playlists: any[]) => {
-    if (!isSignedIn || !user) {
-      // If not signed in, save to localStorage as fallback
-      localStorage.setItem("user_playlists", JSON.stringify(playlists))
-      return
-    }
-
     try {
       // Update local state
       setUserData((prev) => ({
@@ -133,13 +120,13 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
         playlists,
       }))
 
-      // Update user metadata
-      await user.update({
-        publicMetadata: {
-          ...user.publicMetadata,
-          playlists,
-        },
-      })
+      // In a real app, you would save this to your database
+      // For now, we'll just use localStorage
+      const updatedData = {
+        ...userData,
+        playlists,
+      }
+      localStorage.setItem("user_data", JSON.stringify(updatedData))
     } catch (error) {
       console.error("Error saving playlists:", error)
       toast({
@@ -153,14 +140,8 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Save settings to user metadata
+  // Save settings
   const saveSettings = async (settings: Record<string, any>) => {
-    if (!isSignedIn || !user) {
-      // If not signed in, save to localStorage as fallback
-      localStorage.setItem("app_settings", JSON.stringify(settings))
-      return
-    }
-
     try {
       // Update local state
       setUserData((prev) => ({
@@ -168,13 +149,13 @@ export function UserDataProvider({ children }: { children: React.ReactNode }) {
         settings,
       }))
 
-      // Update user metadata
-      await user.update({
-        publicMetadata: {
-          ...user.publicMetadata,
-          settings,
-        },
-      })
+      // In a real app, you would save this to your database
+      // For now, we'll just use localStorage
+      const updatedData = {
+        ...userData,
+        settings,
+      }
+      localStorage.setItem("user_data", JSON.stringify(updatedData))
     } catch (error) {
       console.error("Error saving settings:", error)
       toast({

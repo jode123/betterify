@@ -58,7 +58,12 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
-    "@clerk/nextjs": "latest"
+    "@auth/core": "latest",
+    "nodemailer": "latest",
+    "next-auth": "latest",
+    "fs": "latest",
+    "path": "latest",
+    "uuid": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

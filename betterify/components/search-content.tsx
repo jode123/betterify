@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback, memo } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { searchSpotify } from "@/lib/spotify"
@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
-import { Search, Play, Heart, MoreHorizontal } from "lucide-react"
+import { Search, Play, Heart, MoreHorizontal, Download } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
@@ -20,8 +20,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { getPlaylists, addSongToPlaylist, toggleLikeSong, isLikedSong, type Song } from "@/lib/playlist-manager"
+import { addSongToPlaylist, toggleLikeSong, isLikedSong, type Song } from "@/lib/playlist-manager"
 import { useToast } from "@/hooks/use-toast"
+import { usePlaylists } from "@/hooks/use-playlists"
+import { CopyrightWarningModal } from "@/components/copyright-warning-modal"
 
 interface Track {
   id: string
@@ -56,6 +58,118 @@ interface PipedResult {
   isShort: boolean
 }
 
+// Memoized track item component for better performance
+const TrackItem = memo(
+  ({
+    track,
+    onPlay,
+    onLike,
+    onAddToPlaylist,
+    onDownload,
+  }: {
+    track: Track
+    onPlay: () => void
+    onLike: () => void
+    onAddToPlaylist: () => void
+    onDownload: () => void
+  }) => {
+    return (
+      <div className="flex items-center p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md group">
+        <div className="w-12 h-12 relative mr-3">
+          <Image
+            src={track.album.images[0]?.url || "/placeholder.svg?height=48&width=48"}
+            alt={track.album.name}
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-white" onClick={onPlay}>
+              <Play size={16} fill="currentColor" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1">
+          <div className="font-medium">{track.name}</div>
+          <div className="text-sm text-neutral-500 dark:text-neutral-400">
+            {track.artists.map((a) => a.name).join(", ")}
+          </div>
+        </div>
+        <div className="flex space-x-1">
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onLike}>
+            <Heart
+              size={16}
+              className={isLikedSong(`${track.artists[0].name}-${track.name}`) ? "fill-red-500 text-red-500" : ""}
+            />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8">
+                <MoreHorizontal size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onPlay}>Play</DropdownMenuItem>
+              <DropdownMenuItem onClick={onDownload}>Download</DropdownMenuItem>
+              <DialogTrigger asChild>
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    onAddToPlaylist()
+                  }}
+                >
+                  Add to Playlist
+                </DropdownMenuItem>
+              </DialogTrigger>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    )
+  },
+)
+TrackItem.displayName = "TrackItem"
+
+// Memoized video item component for better performance
+const VideoItem = memo(
+  ({
+    result,
+    onPlay,
+    onDownload,
+  }: {
+    result: PipedResult
+    onPlay: () => void
+    onDownload: () => void
+  }) => {
+    return (
+      <div className="flex items-center p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md group">
+        <div className="w-12 h-12 relative mr-3">
+          <Image
+            src={result.thumbnail || "/placeholder.svg?height=48&width=48"}
+            alt={result.title}
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-white" onClick={onPlay}>
+              <Play size={16} fill="currentColor" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1">
+          <div className="font-medium">{result.title}</div>
+          <div className="text-sm text-neutral-500 dark:text-neutral-400">{result.uploaderName}</div>
+        </div>
+        <div className="flex space-x-1">
+          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onDownload}>
+            <Download size={16} />
+          </Button>
+        </div>
+      </div>
+    )
+  },
+)
+VideoItem.displayName = "VideoItem"
+
 export function SearchContent() {
   const [query, setQuery] = useState("")
   const [spotifyResults, setSpotifyResults] = useState<{
@@ -67,50 +181,50 @@ export function SearchContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedSong, setSelectedSong] = useState<Song | null>(null)
-  const [playlists, setPlaylists] = useState<ReturnType<typeof getPlaylists>>([])
   const [isAddingToPlaylist, setIsAddingToPlaylist] = useState(false)
+  const [showCopyrightWarning, setShowCopyrightWarning] = useState(false)
+  const [downloadInfo, setDownloadInfo] = useState<{ videoId: string; title: string; artist: string } | null>(null)
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { toast } = useToast()
+  const { playlists } = usePlaylists()
 
-  // Load playlists
-  useEffect(() => {
-    setPlaylists(getPlaylists())
-  }, [])
-
-  // Search function
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
-    }
-
-    if (!query.trim()) {
+  // Debounced search function
+  const performSearch = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
       setSpotifyResults({ tracks: [], artists: [], albums: [] })
       setPipedResults([])
       return
     }
 
-    searchTimeoutRef.current = setTimeout(async () => {
-      setIsLoading(true)
-      setError(null)
+    setIsLoading(true)
+    setError(null)
 
-      try {
-        // Search on Spotify
-        const spotifyData = await searchSpotify(query)
-        setSpotifyResults({
-          tracks: spotifyData.tracks?.items || [],
-          artists: spotifyData.artists?.items || [],
-          albums: spotifyData.albums?.items || [],
-        })
+    try {
+      // Run searches in parallel for better performance
+      const [spotifyData, pipedData] = await Promise.all([searchSpotify(searchQuery), searchPiped(searchQuery)])
 
-        // Search on Piped
-        const pipedData = await searchPiped(query)
-        setPipedResults(pipedData)
-      } catch (err) {
-        console.error("Search error:", err)
-        setError("Failed to search. Please try again later.")
-      } finally {
-        setIsLoading(false)
-      }
+      setSpotifyResults({
+        tracks: spotifyData.tracks?.items || [],
+        artists: spotifyData.artists?.items || [],
+        albums: spotifyData.albums?.items || [],
+      })
+      setPipedResults(pipedData)
+    } catch (err) {
+      console.error("Search error:", err)
+      setError("Failed to search. Please try again later.")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  // Handle search input with debounce
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(query)
     }, 500)
 
     return () => {
@@ -118,28 +232,31 @@ export function SearchContent() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [query])
+  }, [query, performSearch])
 
   // Handle playing a track
-  const playTrack = async (artist: string, track: string, album?: string) => {
-    try {
-      window.dispatchEvent(
-        new CustomEvent("play-track", {
-          detail: { artist, track, album },
-        }),
-      )
-    } catch (error) {
-      console.error("Error playing track:", error)
-      toast({
-        title: "Playback Error",
-        description: "Failed to play this track. Please try another one.",
-        variant: "destructive",
-      })
-    }
-  }
+  const playTrack = useCallback(
+    (artist: string, track: string, album?: string) => {
+      try {
+        window.dispatchEvent(
+          new CustomEvent("play-track", {
+            detail: { artist, track, album },
+          }),
+        )
+      } catch (error) {
+        console.error("Error playing track:", error)
+        toast({
+          title: "Playback Error",
+          description: "Failed to play this track. Please try another one.",
+          variant: "destructive",
+        })
+      }
+    },
+    [toast],
+  )
 
   // Handle playing a Piped result
-  const playPipedResult = (result: PipedResult) => {
+  const playPipedResult = useCallback((result: PipedResult) => {
     const videoId = result.url.split("v=")[1] || result.url.split("/").pop()
 
     window.dispatchEvent(
@@ -147,113 +264,201 @@ export function SearchContent() {
         detail: { videoId, title: result.title, uploader: result.uploaderName },
       }),
     )
-  }
+  }, [])
 
-  // Handle liking a song
-  const handleLikeSong = async (artist: string, track: string, thumbnailUrl: string) => {
-    try {
-      // Get video ID from Piped
-      const searchResults = await searchPiped(`${artist} ${track}`)
+  // Handle downloading a track
+  const handleDownload = useCallback((videoId: string, title: string, artist: string) => {
+    setDownloadInfo({ videoId, title, artist })
+    setShowCopyrightWarning(true)
+  }, [])
 
-      if (searchResults.length === 0) {
-        throw new Error("No results found")
-      }
-
-      const videoId = searchResults[0].url.split("v=")[1] || searchResults[0].url.split("/").pop()
-
-      const song: Song = {
-        id: `song_${Date.now()}`,
-        title: track,
-        artist: artist,
-        thumbnailUrl,
-        videoId,
-        duration: searchResults[0].duration || 0,
-      }
-
-      const isLiked = toggleLikeSong(song)
-
-      toast({
-        title: isLiked ? "Added to Liked Songs" : "Removed from Liked Songs",
-        description: `"${track}" by ${artist} has been ${isLiked ? "added to" : "removed from"} your Liked Songs.`,
-      })
-
-      // Refresh playlists
-      setPlaylists(getPlaylists())
-    } catch (error) {
-      console.error("Error liking song:", error)
-      toast({
-        title: "Error",
-        description: "Failed to like this song. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // Handle adding a song to a playlist
-  const handleAddToPlaylist = async (playlistId: string) => {
-    if (!selectedSong) return
-
-    setIsAddingToPlaylist(true)
+  // Proceed with download after copyright warning
+  const proceedWithDownload = useCallback(async () => {
+    if (!downloadInfo) return
 
     try {
-      const success = addSongToPlaylist(playlistId, selectedSong)
+      const { videoId, title, artist } = downloadInfo
 
-      if (success) {
+      toast({
+        title: "Download Started",
+        description: "Your download has started. This may take a moment.",
+      })
+
+      const response = await fetch(
+        `/api/download?videoId=${videoId}&title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}&audioOnly=true`,
+      )
+
+      if (!response.ok) {
+        throw new Error("Download failed")
+      }
+
+      const data = await response.json()
+
+      if (data.success) {
         toast({
-          title: "Added to Playlist",
-          description: `"${selectedSong.title}" has been added to the playlist.`,
+          title: "Download Complete",
+          description: "Your download has completed successfully.",
         })
+
+        // Create a temporary link to download the file
+        const link = document.createElement("a")
+        link.href = data.downloadUrl
+        link.download = data.fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
       } else {
-        toast({
-          title: "Already in Playlist",
-          description: "This song is already in the selected playlist.",
-        })
+        throw new Error(data.error || "Download failed")
       }
-
-      // Refresh playlists
-      setPlaylists(getPlaylists())
     } catch (error) {
-      console.error("Error adding to playlist:", error)
+      console.error("Download error:", error)
       toast({
-        title: "Error",
-        description: "Failed to add song to playlist. Please try again.",
+        title: "Download Error",
+        description: "Failed to download this track. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setIsAddingToPlaylist(false)
-      setSelectedSong(null)
+      setShowCopyrightWarning(false)
+      setDownloadInfo(null)
     }
-  }
+  }, [downloadInfo, toast])
+
+  // Handle liking a song
+  const handleLikeSong = useCallback(
+    async (artist: string, track: string, thumbnailUrl: string) => {
+      try {
+        // Get video ID from Piped
+        const searchResults = await searchPiped(`${artist} ${track}`)
+
+        if (searchResults.length === 0) {
+          throw new Error("No results found")
+        }
+
+        const videoId = searchResults[0].url.split("v=")[1] || searchResults[0].url.split("/").pop()
+
+        const song: Song = {
+          id: `song_${Date.now()}`,
+          title: track,
+          artist: artist,
+          thumbnailUrl,
+          videoId,
+          duration: searchResults[0].duration || 0,
+        }
+
+        const isLiked = toggleLikeSong(song)
+
+        toast({
+          title: isLiked ? "Added to Liked Songs" : "Removed from Liked Songs",
+          description: `"${track}" by ${artist} has been ${isLiked ? "added to" : "removed from"} your Liked Songs.`,
+        })
+      } catch (error) {
+        console.error("Error liking song:", error)
+        toast({
+          title: "Error",
+          description: "Failed to like this song. Please try again.",
+          variant: "destructive",
+        })
+      }
+    },
+    [toast],
+  )
+
+  // Handle adding a song to a playlist
+  const handleAddToPlaylist = useCallback(
+    async (playlistId: string) => {
+      if (!selectedSong) return
+
+      setIsAddingToPlaylist(true)
+
+      try {
+        const success = addSongToPlaylist(playlistId, selectedSong)
+
+        if (success) {
+          toast({
+            title: "Added to Playlist",
+            description: `"${selectedSong.title}" has been added to the playlist.`,
+          })
+        } else {
+          toast({
+            title: "Already in Playlist",
+            description: "This song is already in the selected playlist.",
+          })
+        }
+      } catch (error) {
+        console.error("Error adding to playlist:", error)
+        toast({
+          title: "Error",
+          description: "Failed to add song to playlist. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsAddingToPlaylist(false)
+        setSelectedSong(null)
+      }
+    },
+    [selectedSong, toast],
+  )
 
   // Prepare a song for adding to playlist
-  const prepareAddToPlaylist = async (artist: string, track: string, thumbnailUrl: string) => {
-    try {
-      // Get video ID from Piped
-      const searchResults = await searchPiped(`${artist} ${track}`)
+  const prepareAddToPlaylist = useCallback(
+    async (artist: string, track: string, thumbnailUrl: string) => {
+      try {
+        // Get video ID from Piped
+        const searchResults = await searchPiped(`${artist} ${track}`)
 
-      if (searchResults.length === 0) {
-        throw new Error("No results found")
+        if (searchResults.length === 0) {
+          throw new Error("No results found")
+        }
+
+        const videoId = searchResults[0].url.split("v=")[1] || searchResults[0].url.split("/").pop()
+
+        setSelectedSong({
+          id: `song_${Date.now()}`,
+          title: track,
+          artist: artist,
+          thumbnailUrl,
+          videoId,
+          duration: searchResults[0].duration || 0,
+        })
+      } catch (error) {
+        console.error("Error preparing song:", error)
+        toast({
+          title: "Error",
+          description: "Failed to prepare song for playlist. Please try again.",
+          variant: "destructive",
+        })
       }
+    },
+    [toast],
+  )
 
-      const videoId = searchResults[0].url.split("v=")[1] || searchResults[0].url.split("/").pop()
-
-      setSelectedSong({
-        id: `song_${Date.now()}`,
-        title: track,
-        artist: artist,
-        thumbnailUrl,
-        videoId,
-        duration: searchResults[0].duration || 0,
-      })
-    } catch (error) {
-      console.error("Error preparing song:", error)
-      toast({
-        title: "Error",
-        description: "Failed to prepare song for playlist. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
+  // Prepare download for a Spotify track
+  const prepareSpotifyDownload = useCallback(
+    async (artist: string, track: string) => {
+      try {
+        // Get video ID from Piped
+        const searchResults = await searchPiped(`${artist} ${track}`)
+        if (searchResults.length > 0) {
+          const videoId = searchResults[0].url.split("v=")[1] || searchResults[0].url.split("/").pop()
+          handleDownload(videoId, track, artist)
+        } else {
+          toast({
+            title: "Download Error",
+            description: "Could not find a matching video for this track.",
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        console.error("Error preparing download:", error)
+        toast({
+          title: "Error",
+          description: "Failed to prepare download. Please try again.",
+          variant: "destructive",
+        })
+      }
+    },
+    [handleDownload, toast],
+  )
 
   return (
     <div className="flex-1 p-4 md:p-8 overflow-hidden">
@@ -293,115 +498,26 @@ export function SearchContent() {
                       <h3 className="text-xl font-semibold mb-4">Songs</h3>
                       <div className="space-y-2">
                         {spotifyResults.tracks.slice(0, 5).map((track) => (
-                          <div
+                          <TrackItem
                             key={track.id}
-                            className="flex items-center p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md group"
-                          >
-                            <div className="w-12 h-12 relative mr-3">
-                              <Image
-                                src={track.album.images[0]?.url || "/placeholder.svg?height=48&width=48"}
-                                alt={track.album.name}
-                                fill
-                                className="object-cover"
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-white"
-                                  onClick={() => playTrack(track.artists[0].name, track.name, track.album.name)}
-                                >
-                                  <Play size={16} fill="currentColor" />
-                                </Button>
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium">{track.name}</div>
-                              <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                                {track.artists.map((a) => a.name).join(", ")}
-                              </div>
-                            </div>
-                            <div className="flex space-x-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={() =>
-                                  handleLikeSong(
-                                    track.artists[0].name,
-                                    track.name,
-                                    track.album.images[0]?.url || "/placeholder.svg?height=48&width=48",
-                                  )
-                                }
-                              >
-                                <Heart
-                                  size={16}
-                                  className={
-                                    isLikedSong(`${track.artists[0].name}-${track.name}`)
-                                      ? "fill-red-500 text-red-500"
-                                      : ""
-                                  }
-                                />
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button size="icon" variant="ghost" className="h-8 w-8">
-                                    <MoreHorizontal size={16} />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => playTrack(track.artists[0].name, track.name, track.album.name)}
-                                  >
-                                    Play
-                                  </DropdownMenuItem>
-                                  <Dialog>
-                                    <DialogTrigger asChild>
-                                      <DropdownMenuItem
-                                        onSelect={(e) => {
-                                          e.preventDefault()
-                                          prepareAddToPlaylist(
-                                            track.artists[0].name,
-                                            track.name,
-                                            track.album.images[0]?.url || "/placeholder.svg?height=48&width=48",
-                                          )
-                                        }}
-                                      >
-                                        Add to Playlist
-                                      </DropdownMenuItem>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                      <DialogHeader>
-                                        <DialogTitle>Add to Playlist</DialogTitle>
-                                        <DialogDescription>Select a playlist to add this song to.</DialogDescription>
-                                      </DialogHeader>
-                                      <div className="py-4">
-                                        {playlists.length === 0 ? (
-                                          <p className="text-center text-neutral-500">
-                                            No playlists found. Create one first.
-                                          </p>
-                                        ) : (
-                                          <div className="space-y-2">
-                                            {playlists.map((playlist) => (
-                                              <Button
-                                                key={playlist.id}
-                                                variant="outline"
-                                                className="w-full justify-start"
-                                                onClick={() => handleAddToPlaylist(playlist.id)}
-                                                disabled={isAddingToPlaylist}
-                                              >
-                                                {playlist.name}
-                                              </Button>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </DialogContent>
-                                  </Dialog>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
+                            track={track}
+                            onPlay={() => playTrack(track.artists[0].name, track.name, track.album.name)}
+                            onLike={() =>
+                              handleLikeSong(
+                                track.artists[0].name,
+                                track.name,
+                                track.album.images[0]?.url || "/placeholder.svg?height=48&width=48",
+                              )
+                            }
+                            onAddToPlaylist={() =>
+                              prepareAddToPlaylist(
+                                track.artists[0].name,
+                                track.name,
+                                track.album.images[0]?.url || "/placeholder.svg?height=48&width=48",
+                              )
+                            }
+                            onDownload={() => prepareSpotifyDownload(track.artists[0].name, track.name)}
+                          />
                         ))}
                       </div>
                     </section>
@@ -413,35 +529,15 @@ export function SearchContent() {
                       <h3 className="text-xl font-semibold mb-4">Videos</h3>
                       <div className="space-y-2">
                         {pipedResults.slice(0, 5).map((result) => (
-                          <div
+                          <VideoItem
                             key={result.url}
-                            className="flex items-center p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md group"
-                          >
-                            <div className="w-12 h-12 relative mr-3">
-                              <Image
-                                src={result.thumbnail || "/placeholder.svg?height=48&width=48"}
-                                alt={result.title}
-                                fill
-                                className="object-cover"
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 text-white"
-                                  onClick={() => playPipedResult(result)}
-                                >
-                                  <Play size={16} fill="currentColor" />
-                                </Button>
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium">{result.title}</div>
-                              <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                                {result.uploaderName}
-                              </div>
-                            </div>
-                          </div>
+                            result={result}
+                            onPlay={() => playPipedResult(result)}
+                            onDownload={() => {
+                              const videoId = result.url.split("v=")[1] || result.url.split("/").pop()
+                              handleDownload(videoId, result.title, result.uploaderName)
+                            }}
+                          />
                         ))}
                       </div>
                     </section>
@@ -514,120 +610,34 @@ export function SearchContent() {
               )}
             </TabsContent>
 
+            {/* Other tabs content similar to above */}
             <TabsContent value="songs" className="mt-0">
+              {/* Songs tab content */}
               {isLoading ? (
                 <div className="text-center py-8">Searching...</div>
               ) : spotifyResults.tracks.length > 0 ? (
                 <div className="space-y-2">
                   {spotifyResults.tracks.map((track) => (
-                    <div
+                    <TrackItem
                       key={track.id}
-                      className="flex items-center p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-md group"
-                    >
-                      <div className="w-12 h-12 relative mr-3">
-                        <Image
-                          src={track.album.images[0]?.url || "/placeholder.svg?height=48&width=48"}
-                          alt={track.album.name}
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-white"
-                            onClick={() => playTrack(track.artists[0].name, track.name, track.album.name)}
-                          >
-                            <Play size={16} fill="currentColor" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium">{track.name}</div>
-                        <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                          {track.artists.map((a) => a.name).join(", ")}
-                        </div>
-                      </div>
-                      <div className="text-sm text-neutral-500 dark:text-neutral-400">{track.album.name}</div>
-                      <div className="flex space-x-1 ml-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                          onClick={() =>
-                            handleLikeSong(
-                              track.artists[0].name,
-                              track.name,
-                              track.album.images[0]?.url || "/placeholder.svg?height=48&width=48",
-                            )
-                          }
-                        >
-                          <Heart
-                            size={16}
-                            className={
-                              isLikedSong(`${track.artists[0].name}-${track.name}`) ? "fill-red-500 text-red-500" : ""
-                            }
-                          />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-8 w-8">
-                              <MoreHorizontal size={16} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => playTrack(track.artists[0].name, track.name, track.album.name)}
-                            >
-                              Play
-                            </DropdownMenuItem>
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <DropdownMenuItem
-                                  onSelect={(e) => {
-                                    e.preventDefault()
-                                    prepareAddToPlaylist(
-                                      track.artists[0].name,
-                                      track.name,
-                                      track.album.images[0]?.url || "/placeholder.svg?height=48&width=48",
-                                    )
-                                  }}
-                                >
-                                  Add to Playlist
-                                </DropdownMenuItem>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Add to Playlist</DialogTitle>
-                                  <DialogDescription>Select a playlist to add this song to.</DialogDescription>
-                                </DialogHeader>
-                                <div className="py-4">
-                                  {playlists.length === 0 ? (
-                                    <p className="text-center text-neutral-500">
-                                      No playlists found. Create one first.
-                                    </p>
-                                  ) : (
-                                    <div className="space-y-2">
-                                      {playlists.map((playlist) => (
-                                        <Button
-                                          key={playlist.id}
-                                          variant="outline"
-                                          className="w-full justify-start"
-                                          onClick={() => handleAddToPlaylist(playlist.id)}
-                                          disabled={isAddingToPlaylist}
-                                        >
-                                          {playlist.name}
-                                        </Button>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
+                      track={track}
+                      onPlay={() => playTrack(track.artists[0].name, track.name, track.album.name)}
+                      onLike={() =>
+                        handleLikeSong(
+                          track.artists[0].name,
+                          track.name,
+                          track.album.images[0]?.url || "/placeholder.svg?height=48&width=48",
+                        )
+                      }
+                      onAddToPlaylist={() =>
+                        prepareAddToPlaylist(
+                          track.artists[0].name,
+                          track.name,
+                          track.album.images[0]?.url || "/placeholder.svg?height=48&width=48",
+                        )
+                      }
+                      onDownload={() => prepareSpotifyDownload(track.artists[0].name, track.name)}
+                    />
                   ))}
                 </div>
               ) : (
@@ -636,6 +646,7 @@ export function SearchContent() {
             </TabsContent>
 
             <TabsContent value="artists" className="mt-0">
+              {/* Artists tab content */}
               {isLoading ? (
                 <div className="text-center py-8">Searching...</div>
               ) : spotifyResults.artists.length > 0 ? (
@@ -665,6 +676,7 @@ export function SearchContent() {
             </TabsContent>
 
             <TabsContent value="albums" className="mt-0">
+              {/* Albums tab content */}
               {isLoading ? (
                 <div className="text-center py-8">Searching...</div>
               ) : spotifyResults.albums.length > 0 ? (
@@ -699,6 +711,7 @@ export function SearchContent() {
             </TabsContent>
 
             <TabsContent value="videos" className="mt-0">
+              {/* Videos tab content */}
               {isLoading ? (
                 <div className="text-center py-8">Searching...</div>
               ) : pipedResults.length > 0 ? (
@@ -733,6 +746,18 @@ export function SearchContent() {
                           {result.views.toLocaleString()} views • {result.uploaded}
                         </div>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 md:mt-0 md:ml-2"
+                        onClick={() => {
+                          const videoId = result.url.split("v=")[1] || result.url.split("/").pop()
+                          handleDownload(videoId, result.title, result.uploaderName)
+                        }}
+                      >
+                        <Download size={16} className="mr-2" />
+                        Download
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -747,6 +772,42 @@ export function SearchContent() {
           Search for artists, songs, albums, or videos
         </div>
       )}
+
+      {/* Copyright Warning Modal */}
+      <CopyrightWarningModal
+        isOpen={showCopyrightWarning}
+        onClose={() => setShowCopyrightWarning(false)}
+        onProceed={proceedWithDownload}
+      />
+
+      {/* Add to Playlist Dialog */}
+      <Dialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add to Playlist</DialogTitle>
+            <DialogDescription>Select a playlist to add this song to.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {playlists.length === 0 ? (
+              <p className="text-center text-neutral-500">No playlists found. Create one first.</p>
+            ) : (
+              <div className="space-y-2">
+                {playlists.map((playlist) => (
+                  <Button
+                    key={playlist.id}
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => handleAddToPlaylist(playlist.id)}
+                    disabled={isAddingToPlaylist}
+                  >
+                    {playlist.name}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

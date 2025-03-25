@@ -7,6 +7,7 @@ import { Play, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useCopyrightWarning } from "@/components/copyright-warning-modal"
 
 interface LastFmAlbumInfo {
   name: string
@@ -53,6 +54,7 @@ export function LastFmAlbumDetail({ artist, album }: { artist: string; album: st
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showFullDescription, setShowFullDescription] = useState(false)
+  const { showCopyrightWarning } = useCopyrightWarning()
 
   const placeholder = "/placeholder.svg?height=300&width=300"
 
@@ -69,6 +71,7 @@ export function LastFmAlbumDetail({ artist, album }: { artist: string; album: st
         }
 
         const data = await response.json()
+        console.log("Album data:", data)
         setAlbumInfo(data)
       } catch (err) {
         console.error(err)
@@ -80,6 +83,16 @@ export function LastFmAlbumDetail({ artist, album }: { artist: string; album: st
 
     fetchAlbumData()
   }, [artist, album])
+
+  const handlePlayTrack = (artist: string, track: string, album: string) => {
+    showCopyrightWarning(() => {
+      window.dispatchEvent(
+        new CustomEvent("play-track", {
+          detail: { artist, track, album },
+        }),
+      )
+    })
+  }
 
   if (isLoading) {
     return (
@@ -185,11 +198,7 @@ export function LastFmAlbumDetail({ artist, album }: { artist: string; album: st
                 // Play the first track
                 const track = normalizedTracks[0]
                 const trackName = track.name
-                window.dispatchEvent(
-                  new CustomEvent("play-track", {
-                    detail: { artist: albumInfo.artist, track: trackName, album: albumInfo.name },
-                  }),
-                )
+                handlePlayTrack(albumInfo.artist, trackName, albumInfo.name)
               }
             }}
           >
@@ -213,36 +222,40 @@ export function LastFmAlbumDetail({ artist, album }: { artist: string; album: st
                 </tr>
               </thead>
               <tbody>
-                {normalizedTracks.map((track, index) => {
-                  // Handle both track formats
-                  const trackName = track.name
-                  const trackDuration = track.duration
-                  const trackArtist = "artist" in track ? track.artist.name : albumInfo.artist
+                {normalizedTracks.length > 0 ? (
+                  normalizedTracks.map((track, index) => {
+                    // Handle both track formats
+                    const trackName = track.name
+                    const trackDuration = track.duration
+                    const trackArtist = "artist" in track ? track.artist.name : albumInfo.artist
 
-                  return (
-                    <tr
-                      key={`${trackName}-${index}`}
-                      className="hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer theme-glow-hover"
-                      onClick={() => {
-                        window.dispatchEvent(
-                          new CustomEvent("play-track", {
-                            detail: { artist: trackArtist, track: trackName, album: albumInfo.name },
-                          }),
-                        )
-                      }}
-                    >
-                      <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400">
-                        {track["@attr"]?.rank || index + 1}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{trackName}</div>
-                      </td>
-                      <td className="px-4 py-3 text-right text-neutral-500 dark:text-neutral-400">
-                        {formatDuration(trackDuration)}
-                      </td>
-                    </tr>
-                  )
-                })}
+                    return (
+                      <tr
+                        key={`${trackName}-${index}`}
+                        className="hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer theme-glow-hover"
+                        onClick={() => {
+                          handlePlayTrack(trackArtist, trackName, albumInfo.name)
+                        }}
+                      >
+                        <td className="px-4 py-3 text-neutral-500 dark:text-neutral-400">
+                          {track["@attr"]?.rank || index + 1}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{trackName}</div>
+                        </td>
+                        <td className="px-4 py-3 text-right text-neutral-500 dark:text-neutral-400">
+                          {formatDuration(trackDuration)}
+                        </td>
+                      </tr>
+                    )
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-3 text-center text-neutral-500">
+                      No tracks found for this album
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
